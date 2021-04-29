@@ -1,5 +1,5 @@
 # e21
 
-Implement rollup use libsnark and node js for my thesis. 
+Implement zk-rollup use libsnark and node js for my thesis. 
 
-Thank communication for good idea about layer 2 and zk-rollup.
+Thank community for good idea about layer 2 and zk-rollup.
