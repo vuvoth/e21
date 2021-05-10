@@ -7,13 +7,13 @@ add_executable(
 
 target_link_libraries(
   main
-  snark
+  ethsnarks_jubjub
 )
 
 target_include_directories(
   main
   PUBLIC
-  ${DEPENDS_DIR}/libsnark
-  ${DEPENDS_DIR}/libsnark/depends/libfqfft
+  ${DEPENDS_DIR}/ethsnarks
 )
+
 

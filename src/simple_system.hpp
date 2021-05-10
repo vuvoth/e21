@@ -6,9 +6,10 @@
 #include <iostream>
 #include <memory>
 
-using namespace libsnark;
 
 namespace proofsystem {
+
+using namespace libsnark;
 
 template <typename FieldT> class SimpleSystem : public gadget<FieldT> {
   private:
@@ -22,9 +23,12 @@ template <typename FieldT> class SimpleSystem : public gadget<FieldT> {
 
     SimpleSystem(protoboard<FieldT> &pb, const pb_variable<FieldT> &out,
                  const pb_variable<FieldT> &x);
-
+    /**
+     * build constraint system.
+     */
     void generate_r1cs_constraints();
 
+    // fill value for all node and generate withness
     void generate_r1cs_witness();
 };
 } // namespace proofsystem
