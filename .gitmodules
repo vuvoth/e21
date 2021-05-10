@@ -1,3 +1,3 @@
-[submodule "libs/libsnark"]
-	path = libs/libsnark
-	url = https://github.com/scipr-lab/libsnark
+[submodule "libs/ethsnarks"]
+	path = libs/ethsnarks
+	url = https://github.com/HarryR/ethsnarks
