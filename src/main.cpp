@@ -80,9 +80,10 @@ bool test_sha256_many(uint8_t *input_buffer, size_t input_len)
     }
     printf("\n");
     
-    ethsnarks::stub_genkeys_from_pb(pb, "./pk.txt", "./pv.txt");
-    auto json =  ethsnarks::stub_prove_from_pb(pb, "./pk.json");
-    std::cout << json << std::endl;
+    ethsnarks::stub_genkeys_from_pb(pb, "./pk.txt", "./vk.txt");
+    auto json =  ethsnarks::stub_prove_from_pb(pb, "./pk.txt");
+
+    writeToFile("./proof.txt", json);
     return pb.is_satisfied();
 }
 
