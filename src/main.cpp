@@ -3,6 +3,7 @@
 #include <libff/algebra/curves/alt_bn128/alt_bn128_pp.hpp>
 #include "utils.hpp"
 #include "crypto/sha256.h"
+#include "stubs.hpp"
 
 using namespace ethsnarks;
 
@@ -15,6 +16,7 @@ using ethsnarks::ppT;
 
 static const size_t SHA256_block_size_bytes = SHA256_block_size / 8;
 static const size_t SHA256_digest_size_bytes = SHA256_digest_size / 8;
+
 bool test_sha256_many(uint8_t *input_buffer, size_t input_len)
 {
     uint8_t output_digest[SHA256_digest_size_bytes];
@@ -77,7 +79,10 @@ bool test_sha256_many(uint8_t *input_buffer, size_t input_len)
         printf("%02X", x);
     }
     printf("\n");
-
+    
+    ethsnarks::stub_genkeys_from_pb(pb, "./pk.txt", "./pv.txt");
+    auto json =  ethsnarks::stub_prove_from_pb(pb, "./pk.json");
+    std::cout << json << std::endl;
     return pb.is_satisfied();
 }
 
@@ -98,5 +103,6 @@ int main() {
     std::cout << test_sha256_many(buffer, 32) << std::endl;
 
     delete [] buffer;
+
     return 0;
 }

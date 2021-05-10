@@ -14,3 +14,9 @@ build
 .cache
 compile_commands.json
 .ccls
+
+node_modules
+
+#Hardhat files
+cache
+artifacts
