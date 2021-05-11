@@ -20,7 +20,7 @@ describe("Verifier testing", function() {
    /* console.log({
         inVk, vkGammaABC, inProof,input
     })*/
+      expect(await instance.verifyTx(inVk, vkGammaABC, inProof, input)).to.equal(true);
 
-    expect(await instance.verifyTx(inVk, vkGammaABC, inProof, input)).to.equal(true);
   });
 });
