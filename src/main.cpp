@@ -4,7 +4,8 @@ using ethsnarks::bytes_to_bv;
 using ethsnarks::make_var_array;
 
 int main(int argc, char **argv) {
-
+  
+  std::cout << argc << argv[0] << std::endl;
   ProtoboardT pb;
   const Params params;
 
