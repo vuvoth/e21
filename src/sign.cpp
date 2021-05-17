@@ -42,6 +42,7 @@ int main() {
   sign_verify.generate_r1cs_witness();
   
   auto json = ethsnarks::stub_prove_from_pb(pb, "./pk.txt");
+
   ethsnarks::writeToFile("./proof.txt", json);
   return 0;
 }

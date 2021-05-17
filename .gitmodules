@@ -1,3 +1,3 @@
 [submodule "libs/ethsnarks"]
 	path = libs/ethsnarks
-	url = https://github.com/HarryR/ethsnarks
+	url = https://github.com/vuvth/ethsnarks
