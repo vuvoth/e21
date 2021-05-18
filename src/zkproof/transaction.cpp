@@ -1,6 +1,6 @@
 #ifndef E21_ZKPROOF_TRANSACTION_
-
 #define E21_ZKPROOF_TRANSACTION_
+
 #include "transaction.h"
 
 using ethsnarks::ProtoboardT;
@@ -14,7 +14,9 @@ TransactionProver::TransactionProver(ProtoboardT &pb,
     : GadgetT(pb, annotation_prefix), merkle_root(merkle_root),
       signatureProver(pb, params, FMT(annotation_prefix, ".signature")) {}
 
-void TransactionProver::generate_r1cs_constraints() {}
+void TransactionProver::generate_r1cs_constraints() {
+  signatureProver.generate_r1cs_constraints();
+}
 
 void TransactionProver::generate_r1cs_witness(const TxData &tx_data) {}
 
