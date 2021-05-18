@@ -18,18 +18,19 @@ include_directories(.)
 
 
 add_executable(
-  e21 
+  main
   main.cpp
   zkproof/transaction.cpp
+  zkproof/signature.cpp
 )
 
 target_link_libraries(
-  e21  
+  main 
   ethsnarks_jubjub
 )
 
 target_include_directories(
-  e21 
+  main 
   PUBLIC
   ${DEPENDS_DIR}/ethsnarks
 )

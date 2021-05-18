@@ -2,6 +2,7 @@
 #include <libsnark/gadgetlib1/gadgets/basic_gadgets.hpp>
 #include "utils.hpp"
 #include "stubs.hpp"
+#include <ethsnarks.hpp>
 
 using ethsnarks::FieldT;
 using ethsnarks::jubjub::PureEdDSA;

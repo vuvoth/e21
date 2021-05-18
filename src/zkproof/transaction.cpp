@@ -1,20 +1,22 @@
+#ifndef E21_ZKPROOF_TRANSACTION_
+
+#define E21_ZKPROOF_TRANSACTION_
 #include "transaction.h"
 
-using String = std::string;
+using ethsnarks::ProtoboardT;
+
 namespace e21 {
-TransactionSnark::TransactionSnark(ProtoboardT &pb, const Params &params, const VariableArrayT& message,
-                                   const String &annotation_prefix)
-    : GadgetT(pb, annotation_prefix) {
-                        
-    }
+// constructor of Transaction Prover
+TransactionProver::TransactionProver(ProtoboardT &pb,
+                                     const CurveParameter &params,
+                                     const VariableT &merkle_root,
+                                     const String &annotation_prefix)
+    : GadgetT(pb, annotation_prefix), merkle_root(merkle_root),
+      signatureProver(pb, params, FMT(annotation_prefix, ".signature")) {}
 
-void TransactionSnark::generate_r1cs_constraints() {
-  std::cout << "Generate constraints" << std::endl;
-}
+void TransactionProver::generate_r1cs_constraints() {}
 
-void TransactionSnark::generate_r1cs_witness(const TxData& tx_data) {
-  std::cout << "Generate witness" << std::endl;
-}
+void TransactionProver::generate_r1cs_witness(const TxData &tx_data) {}
 
 } // namespace e21
-
+#endif

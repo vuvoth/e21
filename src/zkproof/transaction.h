@@ -1,24 +1,31 @@
-#ifndef E21_CORE_TRANSACTION_H_
-#define E21_CORE_TRANSACTION_H_
+#ifndef SRC_ZKPROOF_TRANSACTION_H_
+#define SRC_ZKPROOF_TRANSACTION_H_
 
-#include "ethsnarks.hpp"
-#include "jubjub/eddsa.hpp"
-#include "tx_data.h"
+#include <util.h>
+#include <ethsnarks.hpp>
+#include <jubjub/eddsa.hpp>
+
+#include "include/signature.h"
+#include "include/tx_data.h"
 
 using ethsnarks::GadgetT;
-using ethsnarks::ProtoboardT;
-using ethsnarks::jubjub::Params;
-using ethsnarks::jubjub::VariablePointT;
 using ethsnarks::VariableT;
-using ethsnarks::VariableArrayT;
 
 namespace e21 {
-class TransactionSnark : public GadgetT {
+class TransactionProver : public GadgetT {
+
 public:
-  TransactionSnark(ProtoboardT &pb, const Params& params, const VariableArrayT& message, const std::string& annotation_prefix);
+  VariableT merkle_root;
+
+  SignatureProver signatureProver;
+
+  TransactionProver(Protoboard &pb, const CurveParameter &params,
+                    const VariableT &merkle_root,
+                    const String &annotation_prefix);
 
   void generate_r1cs_constraints();
-  void generate_r1cs_witness(const TxData& tx);
+  void generate_r1cs_witness(const TxData &tx);
 };
 } // namespace e21
-#endif
+
+#endif // SRC_ZKPROOF_TRANSACTION_H_
