@@ -7,6 +7,9 @@
 using String = std::string;
 namespace e21 {
 
+using ethsnarks::FieldT;
+using ethsnarks::jubjub::EdwardsPoint;
+
 class SignatureSchema {
 public:
   ethsnarks::jubjub::EdwardsPoint pubKey;
@@ -22,8 +25,6 @@ public:
 
 class MerkleProof {
 public:
-  ethsnarks::FieldT old_leaf;
-  ethsnarks::FieldT new_leaf;
   ethsnarks::FieldT merkle_root;
   ethsnarks::FieldT merkle_address;
   std::vector<ethsnarks::FieldT> hash_proof;
@@ -32,11 +33,32 @@ public:
               ethsnarks::FieldT _merkle_address,
               std::vector<ethsnarks::FieldT> _hash_proof,
               ethsnarks::FieldT _old_leaf, ethsnarks::FieldT _new_leaf)
-      : old_leaf(_old_leaf), new_leaf(_new_leaf),
-        merkle_address(_merkle_address), hash_proof(_hash_proof),
+      : merkle_address(_merkle_address), hash_proof(_hash_proof),
         merkle_root(_merkle_root) {}
 };
 
-class TxData {};
+/*
+ * account detail
+ */
+class AccountDetail {
+public:
+  ethsnarks::jubjub::EdwardsPoint public_key;
+  ethsnarks::FieldT balance;
+  ethsnarks::FieldT nonce;
+
+  AccountDetail(FieldT public_key_x, FieldT public_key_y, FieldT balance,
+                FieldT nonce)
+      : public_key(public_key_x, public_key_y), balance(balance), nonce(nonce) {
+  }
+};
+
+class TxData {
+public:
+  AccountDetail sender;
+  AccountDetail receiver;
+  FieldT amount;
+  MerkleProof sender_proof;
+  MerkleProof receiver_proof;
+};
 } // namespace e21
 #endif

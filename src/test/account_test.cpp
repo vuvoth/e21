@@ -1,8 +1,11 @@
 #include <gtest/gtest.h>
+#include <iostream>
+#include <vector>
 #include <zkproof/account.hpp>
+
 using namespace ethsnarks;
 
-TEST(AccountTest, prove_account_existain) {
+TEST(AccountTest, prove_account_sender) {
   ppT::init_public_params();
   ProtoboardT pb;
   jubjub::Params curveParams;
@@ -11,24 +14,22 @@ TEST(AccountTest, prove_account_existain) {
 
   e21::Account account(pb, annotation);
 
-  account.generate_r1cs_constraints();
+  FieldT merkle_root = FieldT("");
+  FieldT merkle_position = FieldT("");
+  FieldT x = FieldT("");
+  FieldT y = FieldT("");
+  FieldT balance = FieldT("");
+  FieldT nonce = FieldT("");
+  FieldT amountValue = FieldT("");
 
-  account.generate_r1cs_witness(
-      FieldT("19790982751286913289823730641586891858807638933628408575447384959"
-             "293803436031"),
-      FieldT(
-          "000000000000000000000000000000000000000000000000000000000000000000"),
-      {FieldT("2447343676970420247355835473667983267115132689045447905848734383"
-              "579598297565"),
-       FieldT("1729647168894571302104205490010882104519285941741332056618165459"
-              "1511652308323")},
-      FieldT("16640337849281745063262458055167200627541825733870167042696807719"
-             "194826501259"),
-      FieldT("24473436769704202473558354736679832671151326890454479058487343835"
-             "79598297565"));
+  VariableT amount(make_variable(pb, amountValue, ".amount"));
 
-  std::cout << "new root";
-  pb.val(account.zk_merkle_existence.result()).print();
+  std::vector<FieldT> hash_proof;
+  e21::AccountDetail account_detail(x, y, balance, nonce);
+
+  account.generate_r1cs_constraints_send(amount);
+
+  std::cout << pb.num_constraints() << std::endl;
   bool is_existence = account.zk_merkle_existence.is_valid();
   ASSERT_TRUE(is_existence);
 }

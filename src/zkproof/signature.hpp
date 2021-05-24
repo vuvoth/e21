@@ -17,16 +17,16 @@ using ethsnarks::VariableArrayT;
 using ethsnarks::jubjub::EdwardsPoint;
 
 namespace e21 {
-class SignatureProver : GadgetT {
+class SignatureGadget : GadgetT {
 public:
   Point pubKey;
   Point R;
   VariableArrayT s;
   VariableArrayT message;
 
-  ethsnarks::jubjub::EdDSA zkSignature;
+  ethsnarks::jubjub::PureEdDSA zkSignature;
 
-  SignatureProver(Protoboard &pb, const CurveParameter &params,
+  SignatureGadget(Protoboard &pb, const CurveParameter &params,
                   const String &annotation_prefix)
 
       : GadgetT(pb, annotation_prefix),

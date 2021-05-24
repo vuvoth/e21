@@ -19,28 +19,23 @@ using ethsnarks::VariableT;
 namespace e21 {
 class TransactionGadget : public GadgetT {
 public:
+  VariableT amount;
   Account sender, receiver;
 
   TransactionGadget(ProtoboardT &pb, const std::string &annotation)
-      : GadgetT(pb, annotation), sender(pb, FMT(annotation, ".sender")),
+      : GadgetT(pb, annotation), amount(make_variable(pb, ".amount")),
+        sender(pb, FMT(annotation, ".sender")),
         receiver(pb, sender.current_root(), FMT(annotation, ".receiver")) {}
 
   void generate_r1cs_constraints() {
-    sender.generate_r1cs_constraints();
-    receiver.generate_r1cs_constraints();
+    sender.generate_r1cs_constraints_send(amount);
+    receiver.generate_r1cs_constraints_receive(amount);
   }
 
-  void generate_r1cs_witness(const MerkleProof &sender_proof,
-                             const MerkleProof &receiver_proof) {
-    sender.generate_r1cs_witness(
-        sender_proof.merkle_root, sender_proof.merkle_address,
-        sender_proof.hash_proof, sender_proof.old_leaf, sender_proof.new_leaf);
-
-    sender.current_root_value().print();
-    receiver.generate_r1cs_witness(
-        sender.current_root_value(), receiver_proof.merkle_address,
-        receiver_proof.hash_proof, receiver_proof.old_leaf,
-        receiver_proof.new_leaf);
+  void generate_r1cs_witness(TxData tx) {
+    this->pb.val(this->amount) = tx.amount;
+    //    this->sender.generate_r1cs_witness();
+    //  this->receiver.generate_r1cs_witness();
   }
 };
 } // namespace e21

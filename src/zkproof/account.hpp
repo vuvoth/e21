@@ -3,11 +3,12 @@
 
 #include "config.h"
 
+#include "base_state.hpp"
+#include "include/tx_data.h"
 #include <ethsnarks.hpp>
 #include <gadgets/merkle_tree.hpp>
 #include <gadgets/mimc.hpp>
 #include <jubjub/point.hpp>
-
 using ethsnarks::merkle_path_authenticator;
 using ethsnarks::merkle_path_compute;
 using ethsnarks::MiMC_e7_hash_gadget;
@@ -37,8 +38,7 @@ public:
   VariableT merkle_root;
   VariableArrayT merkle_position;
   VariableArrayT hash_proof;
-  VariableT old_leaf;
-  VariableT new_leaf;
+  BaseStateGadget state;
 
   ZK_Merkle_Path zk_merkle_path;
   ZK_Merkle_Existence zk_merkle_existence;
@@ -46,50 +46,59 @@ public:
   Account(ProtoboardT &pb, const std::string &annotation)
       : ethsnarks::GadgetT(pb, annotation),
         merkle_root(make_variable(pb, FMT(annotation, ".merkle_root"))),
-        old_leaf(make_variable(pb, FMT(annotation, ".old_hash"))),
-        new_leaf(make_variable(pb, FMT(annotation, ".new_hash"))),
+        state(pb, FMT(annotation, ".state")),
         merkle_position(
             make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".position"))),
         hash_proof(
             make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".hash_proof"))),
         zk_merkle_path(pb, MERKLE_DEEP, merkle_position, merkle_tree_IVs(pb),
-                       new_leaf, hash_proof, FMT(annotation, ".existence")),
+                       state.hasher.result(), hash_proof,
+                       FMT(annotation, ".existence")),
         zk_merkle_existence(pb, MERKLE_DEEP, merkle_position,
-                            merkle_tree_IVs(pb), old_leaf, merkle_root,
-                            hash_proof, FMT(annotation, ".existence")) {}
+                            merkle_tree_IVs(pb), state.next_hasher.result(),
+                            merkle_root, hash_proof,
+                            FMT(annotation, ".existence")) {}
 
   Account(ProtoboardT &pb, VariableT merkle_root, const std::string &annotation)
       : ethsnarks::GadgetT(pb, annotation), merkle_root(merkle_root),
-        old_leaf(make_variable(pb, FMT(annotation, ".old_hash"))),
-        new_leaf(make_variable(pb, FMT(annotation, ".new_hash"))),
+        state(pb, annotation),
         merkle_position(
             make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".position"))),
         hash_proof(
             make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".hash_proof"))),
         zk_merkle_path(pb, MERKLE_DEEP, merkle_position, merkle_tree_IVs(pb),
-                       new_leaf, hash_proof, FMT(annotation, ".existence")),
+                       state.hasher.result(), hash_proof,
+                       FMT(annotation, ".existence")),
         zk_merkle_existence(pb, MERKLE_DEEP, merkle_position,
-                            merkle_tree_IVs(pb), old_leaf, merkle_root,
-                            hash_proof, FMT(annotation, ".existence")) {}
+                            merkle_tree_IVs(pb), state.next_hasher.result(),
+                            merkle_root, hash_proof,
+                            FMT(annotation, ".existence")) {}
 
-  void generate_r1cs_constraints() {
+  void generate_r1cs_constraints_state_update() {
     zk_merkle_path.generate_r1cs_constraints();
     zk_merkle_existence.generate_r1cs_constraints();
   }
 
+  void generate_r1cs_constraints_send(VariableT amount) {
+    this->state.generate_r1cs_constraints_send(amount);
+    this->generate_r1cs_constraints_state_update();
+  }
+
+  void generate_r1cs_constraints_receive(VariableT amount) {
+    this->state.generate_r1cs_constraints_receive(amount);
+    this->generate_r1cs_constraints_state_update();
+  }
   /*
    * verify node and update node
    */
   void generate_r1cs_witness(FieldT merkle_root, FieldT merkle_position,
-                             std::vector<FieldT> hash_proof, FieldT old_leaf,
-                             FieldT new_leaf) {
-
+                             std::vector<FieldT> hash_proof,
+                             AccountDetail account) {
     this->pb.val(this->merkle_root) = merkle_root;
-    this->pb.val(this->old_leaf) = old_leaf;
-    this->pb.val(this->new_leaf) = new_leaf;
     this->hash_proof.fill_with_field_elements(this->pb, hash_proof);
     this->merkle_position.fill_with_bits_of_field_element(this->pb,
                                                           merkle_position);
+    this->state.generate_r1cs_witness(account);
     zk_merkle_existence.generate_r1cs_witness();
     zk_merkle_path.generate_r1cs_witness();
   }
