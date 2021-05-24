@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
-#include <zkproof/include/signature.h>
+#include <crypto/sha256.h>
 
 #include <ethsnarks.hpp>
 
-TEST(SignatureProver, runAble) {
+#include "zkproof/signature.hpp"
+
+TEST(SignatureProver, verirySignature) {
   ethsnarks::ppT::init_public_params();
   ethsnarks::ProtoboardT pb;
   ethsnarks::jubjub::Params params;

@@ -11,11 +11,33 @@ enable_testing()
 add_executable(
   signature_prover_test
   signature_prover_test.cpp 
-  ../zkproof/signature.cpp
 )
 
 target_link_libraries(
   signature_prover_test
+  ethsnarks_jubjub
+  gtest_main
+)
+
+add_executable(
+  account_test
+  account_test.cpp 
+)
+
+target_link_libraries(
+  account_test 
+  ethsnarks_jubjub
+  gtest_main
+)
+
+
+add_executable(
+  transaction_gadget_test 
+  transaction_gadget_test.cpp 
+)
+
+target_link_libraries(
+  transaction_gadget_test
   ethsnarks_jubjub
   gtest_main
 )

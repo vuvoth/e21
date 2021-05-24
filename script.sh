@@ -9,9 +9,14 @@ function build() {
     make -j8
 }
 
+function test() {
+    cd ./build/src/test && ./account_test
+}
 
 if [ $1 == "config" ]; then 
     config
-else 
+elif [ $1 == "build" ]; then
     build
+else 
+    test
 fi

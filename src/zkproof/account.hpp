@@ -1,0 +1,103 @@
+#ifndef ZK_PROOF_ACCOUNT_HPP_
+#define ZK_PROOF_ACCOUNT_HPP_
+
+#include "config.h"
+
+#include <ethsnarks.hpp>
+#include <gadgets/merkle_tree.hpp>
+#include <gadgets/mimc.hpp>
+#include <jubjub/point.hpp>
+
+using ethsnarks::merkle_path_authenticator;
+using ethsnarks::merkle_path_compute;
+using ethsnarks::MiMC_e7_hash_gadget;
+
+namespace e21 {
+
+typedef merkle_path_compute<MiMC_e7_hash_gadget> ZK_Merkle_Path;
+typedef merkle_path_authenticator<MiMC_e7_hash_gadget> ZK_Merkle_Existence;
+
+using ethsnarks::FieldT;
+using ethsnarks::GadgetT;
+using ethsnarks::make_var_array;
+using ethsnarks::make_variable;
+using ethsnarks::merkle_tree_IVs;
+using ethsnarks::ProtoboardT;
+using ethsnarks::VariableArrayT;
+using ethsnarks::VariableT;
+
+/**
+ * proof existence of account
+ * proof new hash
+ *
+ */
+class Account : public ethsnarks::GadgetT {
+
+public:
+  VariableT merkle_root;
+  VariableArrayT merkle_position;
+  VariableArrayT hash_proof;
+  VariableT old_leaf;
+  VariableT new_leaf;
+
+  ZK_Merkle_Path zk_merkle_path;
+  ZK_Merkle_Existence zk_merkle_existence;
+
+  Account(ProtoboardT &pb, const std::string &annotation)
+      : ethsnarks::GadgetT(pb, annotation),
+        merkle_root(make_variable(pb, FMT(annotation, ".merkle_root"))),
+        old_leaf(make_variable(pb, FMT(annotation, ".old_hash"))),
+        new_leaf(make_variable(pb, FMT(annotation, ".new_hash"))),
+        merkle_position(
+            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".position"))),
+        hash_proof(
+            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".hash_proof"))),
+        zk_merkle_path(pb, MERKLE_DEEP, merkle_position, merkle_tree_IVs(pb),
+                       new_leaf, hash_proof, FMT(annotation, ".existence")),
+        zk_merkle_existence(pb, MERKLE_DEEP, merkle_position,
+                            merkle_tree_IVs(pb), old_leaf, merkle_root,
+                            hash_proof, FMT(annotation, ".existence")) {}
+
+  Account(ProtoboardT &pb, VariableT merkle_root, const std::string &annotation)
+      : ethsnarks::GadgetT(pb, annotation), merkle_root(merkle_root),
+        old_leaf(make_variable(pb, FMT(annotation, ".old_hash"))),
+        new_leaf(make_variable(pb, FMT(annotation, ".new_hash"))),
+        merkle_position(
+            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".position"))),
+        hash_proof(
+            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".hash_proof"))),
+        zk_merkle_path(pb, MERKLE_DEEP, merkle_position, merkle_tree_IVs(pb),
+                       new_leaf, hash_proof, FMT(annotation, ".existence")),
+        zk_merkle_existence(pb, MERKLE_DEEP, merkle_position,
+                            merkle_tree_IVs(pb), old_leaf, merkle_root,
+                            hash_proof, FMT(annotation, ".existence")) {}
+
+  void generate_r1cs_constraints() {
+    zk_merkle_path.generate_r1cs_constraints();
+    zk_merkle_existence.generate_r1cs_constraints();
+  }
+
+  /*
+   * verify node and update node
+   */
+  void generate_r1cs_witness(FieldT merkle_root, FieldT merkle_position,
+                             std::vector<FieldT> hash_proof, FieldT old_leaf,
+                             FieldT new_leaf) {
+
+    this->pb.val(this->merkle_root) = merkle_root;
+    this->pb.val(this->old_leaf) = old_leaf;
+    this->pb.val(this->new_leaf) = new_leaf;
+    this->hash_proof.fill_with_field_elements(this->pb, hash_proof);
+    this->merkle_position.fill_with_bits_of_field_element(this->pb,
+                                                          merkle_position);
+    zk_merkle_existence.generate_r1cs_witness();
+    zk_merkle_path.generate_r1cs_witness();
+  }
+
+  VariableT current_root() { return zk_merkle_path.result(); }
+  FieldT current_root_value() { return pb.val(zk_merkle_path.result()); }
+};
+
+} // namespace e21
+
+#endif
