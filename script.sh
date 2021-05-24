@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function config() {
+    ln -fs $(pwd)/libs/ethsnarks/ethsnarks utils/ethsnarks
     cd ./build && cmake ..
 }
 
