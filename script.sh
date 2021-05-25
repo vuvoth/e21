@@ -1,6 +1,7 @@
 #!/bin/bash
 
 function config() {
+    unlink ./utils/ethsnarks
     ln -fs $(pwd)/libs/ethsnarks/ethsnarks utils/ethsnarks
     cd ./build && cmake ..
 }

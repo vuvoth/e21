@@ -37,11 +37,11 @@ public:
         balanace(make_variable(pb, FMT(annotation, ".balanace"))),
         next_nonce(make_variable(pb, ".nonce")),
         next_balance(make_variable(pb, FMT(annotation, ".next_balanace"))),
-        hasher(pb, make_variable(pb, FieldT("21"), "iv"),
-               {publicKey.x, publicKey.y, nonce, balanace},
+        hasher(pb, make_variable(pb, FieldT::one(), "iv"),
+               {publicKey.x, publicKey.y, balanace, nonce},
                FMT(annotation, ".hash")),
-        next_hasher(pb, make_variable(pb, FieldT("21"), "iv"),
-                    {publicKey.x, publicKey.y, next_nonce, next_balance},
+        next_hasher(pb, make_variable(pb, FieldT::one(), "iv"),
+                    {publicKey.x, publicKey.y, next_balance, next_nonce},
                     FMT(annotation, ".hash")) {}
 
   void generate_r1cs_constraints_send(VariableT amount) {
@@ -51,6 +51,7 @@ public:
     this->pb.add_r1cs_constraint(
         ConstraintT(this->balanace - amount, FieldT::one(), this->next_balance),
         "balance - amount = next_balance");
+    this->generate_r1cs_hasher_constraints();
   }
 
   void generate_r1cs_constraints_receive(VariableT amount) {
@@ -60,22 +61,34 @@ public:
     this->pb.add_r1cs_constraint(
         ConstraintT(this->balanace + amount, FieldT::one(), this->next_balance),
         "balance + amount = next_balance");
+    this->generate_r1cs_hasher_constraints();
   }
 
-  void generate_r1cs_current_state_constraints() {
-    hasher.generate_r1cs_constraints();
+  void generate_r1cs_hasher_constraints() {
+    this->hasher.generate_r1cs_constraints();
+    this->next_hasher.generate_r1cs_constraints();
   }
 
-  void generate_r1cs_next_state_constraints() {
-    next_hasher.generate_r1cs_constraints();
-  }
-
-  void generate_r1cs_witness(AccountDetail account) {
+  void generate_r1cs_witness_send(AccountDetail account, FieldT amount) {
     this->pb.val(this->publicKey.x) = account.public_key.x;
     this->pb.val(this->publicKey.y) = account.public_key.y;
     this->pb.val(this->nonce) = account.nonce;
     this->pb.val(this->balanace) = account.balance;
+    this->pb.val(this->next_nonce) = account.nonce + 1;
+    this->pb.val(this->next_balance) = account.balance - amount;
     hasher.generate_r1cs_witness();
+    next_hasher.generate_r1cs_witness();
+  }
+
+  void generate_r1cs_witness_receive(AccountDetail account, FieldT amount) {
+    this->pb.val(this->publicKey.x) = account.public_key.x;
+    this->pb.val(this->publicKey.y) = account.public_key.y;
+    this->pb.val(this->nonce) = account.nonce;
+    this->pb.val(this->balanace) = account.balance;
+    this->pb.val(this->next_nonce) = account.nonce;
+    this->pb.val(this->next_balance) = account.balance + amount;
+    hasher.generate_r1cs_witness();
+    next_hasher.generate_r1cs_witness();
   }
 };
 } // namespace e21
