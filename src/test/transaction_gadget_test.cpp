@@ -3,7 +3,11 @@
 #include "zkproof/transaction.hpp"
 
 #include <ethsnarks.hpp>
+#include <nlohmann/json.hpp>
+
 #include <gtest/gtest.h>
+
+using json = nlohmann::json;
 
 using namespace ethsnarks;
 
@@ -13,8 +17,4 @@ TEST(TransactionGadget_Test, veriry_transaction) {
   ethsnarks::jubjub::Params curve_params;
   e21::TransactionGadget zkTx(pb, curve_params, "transaction");
   zkTx.generate_r1cs_constraints();
-
-  std::cout << pb.num_constraints() << std::endl;
-
-  e21::TxData tx()
 }

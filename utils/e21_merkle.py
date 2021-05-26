@@ -64,14 +64,18 @@ class ZkRollup(object):
 
     def update(self, index, account):
         self.merkle_tree.update(index, self.hash_leaf(account))
+    
+    def set_account_balance(self, index, balance):
+        account = self.get_account_by_index(index)
+        account.update_balance(balance)
+        self.update(index, account)
 
     def get_proof(self, index):
         proof = self.merkle_tree.proof(index)
-
         return {
                 "hash_proof": list(map(str,proof.path)), 
                 "address": str(index),
-                "root": str(self.merkle_tree.root)
+                 "hash_leaf": str(proof.leaf)
                 }
     
     def generate_transaction_proof(self,tx_sign, sender_id, receiver_id, tx_amount):
@@ -84,38 +88,56 @@ class ZkRollup(object):
                "receiver": receiver.toDict(),
                "amount": str(tx_amount), 
                "proof_sender": self.get_proof(sender_id),
-               "proof_receiver": self.get_proof(receiver_id),
-               "signature": {
-                   "R.x": str(tx_sign.R.x),
-                   "R.y": str(tx_sign.R.y),
-                   "s": str(tx_sign.s)
-                   }
+               "proof_receiver": self.get_proof(receiver_id)
         }
         return json.dumps(tx_data)
 
     def tranfer_asset(self, sender_id, receiver_id, amount):    
+
         sender = self.get_account_by_index(sender_id)
         receiver = self.get_account_by_index(receiver_id)
+
+        tx_proof = {
+                "sender_proof": self.get_proof(sender_id),
+                "receiver_proof": self.get_proof(receiver_id), 
+                "sender": sender.toDict(), 
+                "receiver": receiver.toDict(),
+        }
+
+        tx_proof["sender_proof"]["merkle_root"] = str(FQ(self.merkle_tree.root));
+
         sender.sendAsset(amount)
         receiver.receiveAsset(amount)
+
         raw_m = [FQ(sender_id), FQ(receiver_id), FQ(amount), FQ(sender.nonce)] 
+
         m_sig = self.signature.to_bytes(*raw_m)
-        sign_tx = self.signature.sign(m_sig, self.client_data[sender_id])
         
-        #print(sign_tx.sig.R, sign_tx.sig.s)
+        tx_sign = self.signature.sign(m_sig, self.client_data[sender_id])
+        
+        tx_proof['signature'] = {
+                "R.x": str(tx_sign.sig.R.x),
+                "R.y": str(tx_sign.sig.R.y),
+                "s": str(tx_sign.sig.s)
+                }
+        tx_proof["amount"]= str(amount)        
+
         self.update(sender_id, sender)
-        #print(self.merkle_tree.proof(sender_id))
+
+        tx_proof["middle_root"] = str(self.merkle_tree.root);
 
         self.update(receiver_id, receiver)
-       # print(self.merkle_tree.proof(receiver_id))
-        print(self.generate_transaction_proof(sign_tx.sig, sender_id, receiver_id, amount))
+
+
+        print(json.dumps(tx_proof))
+        return tx_proof
         
 zkm_tree = ZkRollup()
 
 zkm_tree.create_account();
 zkm_tree.create_account();
 
-zkm_tree.get_account_by_index(0).update_balance(FQ(1000))
+zkm_tree.set_account_balance(0, FQ(1000))
 
 zkm_tree.tranfer_asset(0, 1, FQ(10))
-zkm_tree.tranfer_asset(1, 0, FQ(8))
+#zkm_tree.tranfer_asset(1, 0, FQ(8))

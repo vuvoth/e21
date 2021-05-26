@@ -5,10 +5,14 @@
 
 #include "base_state.hpp"
 #include "include/tx_data.h"
+#include "utils.hpp"
 #include <ethsnarks.hpp>
 #include <gadgets/merkle_tree.hpp>
 #include <gadgets/mimc.hpp>
 #include <jubjub/point.hpp>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
 
 using ethsnarks::merkle_path_authenticator;
 using ethsnarks::merkle_path_compute;
@@ -89,6 +93,8 @@ public:
     this->state.generate_r1cs_constraints_receive(amount);
     this->generate_r1cs_constraints_state_update();
   }
+
+  void generate_r1cs_witness_send(json witness) {}
   /*
    * verify node and update node
    */
@@ -103,9 +109,6 @@ public:
     this->state.generate_r1cs_witness_send(account, amount);
     zk_merkle_existence.generate_r1cs_witness();
     zk_merkle_path.generate_r1cs_witness();
-
-    this->pb.val(state.next_balance).print();
-    this->pb.val(state.next_nonce).print();
   }
 
   void generate_r1cs_witness_receive(MerkleProof merkle_proof,
