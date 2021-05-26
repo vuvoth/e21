@@ -38,6 +38,17 @@ public:
                                FMT(annotation_prefix, ".message"))),
         zkSignature(pb, params, EdwardsPoint(params.Gx, params.Gy), pubKey, R,
                     s, message, FMT(annotation_prefix, ".verify")) {}
+  SignatureGadget(Protoboard &pb, const CurveParameter &params,
+                  VariableArrayT _message, const String &annotation_prefix)
+
+      : GadgetT(pb, annotation_prefix),
+        pubKey(pb, FMT(annotation_prefix, ".publicKey")),
+        R(pb, FMT(annotation_prefix, ".R")),
+        s(make_var_array(pb, ethsnarks::FieldT::size_in_bits(),
+                         FMT(annotation_prefix, ".s"))),
+        message(_message),
+        zkSignature(pb, params, EdwardsPoint(params.Gx, params.Gy), pubKey, R,
+                    s, message, FMT(annotation_prefix, ".verify")) {}
 
   void generate_r1cs_witness(const SignatureSchema &signature) {
     this->pb.val(pubKey.x) = signature.pubKey.x;

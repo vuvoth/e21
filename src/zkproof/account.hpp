@@ -9,6 +9,7 @@
 #include <gadgets/merkle_tree.hpp>
 #include <gadgets/mimc.hpp>
 #include <jubjub/point.hpp>
+
 using ethsnarks::merkle_path_authenticator;
 using ethsnarks::merkle_path_compute;
 using ethsnarks::MiMC_e7_hash_gadget;
@@ -91,14 +92,14 @@ public:
   /*
    * verify node and update node
    */
-  void generate_r1cs_witness(FieldT merkle_root, FieldT merkle_position,
-                             std::vector<FieldT> hash_proof,
-                             AccountDetail account, FieldT amount) {
+  void generate_r1cs_witness_send(MerkleProof merkle_proof,
+                                  AccountDetail account, FieldT amount) {
 
-    this->pb.val(this->merkle_root) = merkle_root;
-    this->hash_proof.fill_with_field_elements(this->pb, hash_proof);
-    this->merkle_position.fill_with_bits_of_field_element(this->pb,
-                                                          merkle_position);
+    this->pb.val(this->merkle_root) = merkle_proof.merkle_root;
+    this->hash_proof.fill_with_field_elements(this->pb,
+                                              merkle_proof.hash_proof);
+    this->merkle_position.fill_with_bits_of_field_element(
+        this->pb, merkle_proof.merkle_address);
     this->state.generate_r1cs_witness_send(account, amount);
     zk_merkle_existence.generate_r1cs_witness();
     zk_merkle_path.generate_r1cs_witness();
@@ -107,6 +108,21 @@ public:
     this->pb.val(state.next_nonce).print();
   }
 
+  void generate_r1cs_witness_receive(MerkleProof merkle_proof,
+                                     AccountDetail account, FieldT amount) {
+
+    this->pb.val(this->merkle_root) = merkle_proof.merkle_root;
+    this->hash_proof.fill_with_field_elements(this->pb,
+                                              merkle_proof.hash_proof);
+    this->merkle_position.fill_with_bits_of_field_element(
+        this->pb, merkle_proof.merkle_address);
+    this->state.generate_r1cs_witness_receive(account, amount);
+    zk_merkle_existence.generate_r1cs_witness();
+    zk_merkle_path.generate_r1cs_witness();
+
+    this->pb.val(state.next_balance).print();
+    this->pb.val(state.next_nonce).print();
+  }
   VariableT current_root() { return zk_merkle_path.result(); }
   FieldT current_root_value() { return pb.val(zk_merkle_path.result()); }
 };

@@ -31,8 +31,7 @@ public:
 
   MerkleProof(const ethsnarks::FieldT _merkle_root,
               ethsnarks::FieldT _merkle_address,
-              std::vector<ethsnarks::FieldT> _hash_proof,
-              ethsnarks::FieldT _old_leaf, ethsnarks::FieldT _new_leaf)
+              std::vector<ethsnarks::FieldT> _hash_proof)
       : merkle_address(_merkle_address), hash_proof(_hash_proof),
         merkle_root(_merkle_root) {}
 };
@@ -54,6 +53,13 @@ public:
 
 class TxData {
 public:
+  TxData(AccountDetail sender, AccountDetail receiver, FieldT amount,
+         MerkleProof sender_proof, MerkleProof receiver_proof,
+         SignatureSchema signature)
+      : sender(sender), receiver(receiver), amount(amount),
+        signature(signature), sender_proof(sender_proof),
+        receiver_proof(receiver_proof) {}
+  SignatureSchema signature;
   AccountDetail sender;
   AccountDetail receiver;
   FieldT amount;

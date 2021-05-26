@@ -1,3 +1,4 @@
+#include "jubjub/params.hpp"
 #include "zkproof/include/tx_data.h"
 #include "zkproof/transaction.hpp"
 
@@ -9,44 +10,11 @@ using namespace ethsnarks;
 TEST(TransactionGadget_Test, veriry_transaction) {
   ppT::init_public_params();
   ProtoboardT pb;
-
-  e21::TransactionGadget tx(pb, "transaction");
-  tx.generate_r1cs_constraints();
+  ethsnarks::jubjub::Params curve_params;
+  e21::TransactionGadget zkTx(pb, curve_params, "transaction");
+  zkTx.generate_r1cs_constraints();
 
   std::cout << pb.num_constraints() << std::endl;
 
-  /*  e21::MerkleProof sender_proof(
-        FieldT("19790982751286913289823730641586891858807638933628408575447384959"
-               "293803436031"),
-        FieldT(
-            "000000000000000000000000000000000000000000000000000000000000000000"),
-        {FieldT("2447343676970420247355835473667983267115132689045447905848734383"
-                "579598297565"),
-         FieldT("1729647168894571302104205490010882104519285941741332056618165459"
-                "1511652308323")},
-        FieldT("16640337849281745063262458055167200627541825733870167042696807719"
-               "194826501259"),
-        FieldT("24473436769704202473558354736679832671151326890454479058487343835"
-               "79598297565"));
-    /*MerkleProof(leaf=2447343676970420247355835473667983267115132689045447905848734383579598297565,
-     * address=[1, 0],
-     * path=[2447343676970420247355835473667983267115132689045447905848734383579598297565,
-     * 17296471688945713021042054900108821045192859417413320566181654591511652308323],
-     * hasher=<ethsnarks.merkletree.MerkleHasher_MiMC object at 0x103b49f70>,
-     * width=2)*/
-  /*
-  e21::MerkleProof receiver_proof(
-      FieldT("000"), FieldT("0000001"),
-      {FieldT("2447343676970420247355835473667983267115132689045447905848734383"
-              "579598297565"),
-       FieldT("1729647168894571302104205490010882104519285941741332056618165459"
-              "1511652308323")},
-      FieldT("2447343676970420247355835473667983267115132689045447905848734383"
-             "579598297565"),
-      FieldT("2447343676970420247355835473667983267115132689045447905848734383"
-             "579598297565"));
-
-  tx.generate_r1cs_witness(sender_proof, receiver_proof);
-
-  ASSERT_TRUE(tx.receiver.zk_merkle_existence.is_valid());*/
+  e21::TxData tx()
 }

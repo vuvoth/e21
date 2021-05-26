@@ -13,13 +13,6 @@ TEST(AccountTest, prove_account_sender) {
   std::string annotation = "account";
 
   e21::Account account(pb, annotation);
-  /*15567892357950158328174076702272306999716048942239645312988282818616466203732
-MerkleProof(leaf=10369667818324323896887277109387174878817546312012550009593689075124224812694,
-address=[0, 0],
-path=[19321998414906712342737093331922571923461328494325615870852140381009276079041,
-17296471688945713021042054900108821045192859417413320566181654591511652308323],
-hasher=<ethsnarks.merkletree.MerkleHasher_MiMC object at 0x1059506a0>, width=2)
-*/
   FieldT merkle_root = FieldT("144016233623689852628042619555864008260008277463"
                               "19907286134144777205320465013");
   FieldT merkle_position = FieldT("0000");
@@ -42,10 +35,10 @@ hasher=<ethsnarks.merkletree.MerkleHasher_MiMC object at 0x1059506a0>, width=2)
 
   e21::AccountDetail account_detail(x, y, balance, nonce);
 
+  e21::MerkleProof merkle_proof(merkle_root, merkle_position, hash_proof);
   account.generate_r1cs_constraints_send(amount);
 
-  account.generate_r1cs_witness(merkle_root, merkle_position, hash_proof,
-                                account_detail, amountValue);
+  account.generate_r1cs_witness_send(merkle_proof, account_detail, amountValue);
 
   pb.val(account.state.hasher.result()).print();
   pb.val(account.state.next_hasher.result()).print();
