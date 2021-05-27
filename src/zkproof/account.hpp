@@ -5,6 +5,7 @@
 
 #include "base_state.hpp"
 #include "include/tx_data.h"
+#include "libsnark/gadgetlib1/gadgets/basic_gadgets.hpp"
 #include "utils.hpp"
 #include <ethsnarks.hpp>
 #include <gadgets/merkle_tree.hpp>
@@ -52,14 +53,14 @@ public:
       : ethsnarks::GadgetT(pb, annotation),
         merkle_root(make_variable(pb, FMT(annotation, ".merkle_root"))),
         state(pb, FMT(annotation, ".state")),
-        merkle_position(
-            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".position"))),
-        hash_proof(
-            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".hash_proof"))),
-        zk_merkle_path(pb, MERKLE_DEEP, merkle_position, merkle_tree_IVs(pb),
-                       state.next_hasher.result(), hash_proof,
-                       FMT(annotation, ".new_hash")),
-        zk_merkle_existence(pb, MERKLE_DEEP, merkle_position,
+        merkle_position(make_var_array(pb, config::MERKLE_DEEP,
+                                       FMT(annotation, ".position"))),
+        hash_proof(make_var_array(pb, config::MERKLE_DEEP,
+                                  FMT(annotation, ".hash_proof"))),
+        zk_merkle_path(pb, config::MERKLE_DEEP, merkle_position,
+                       merkle_tree_IVs(pb), state.next_hasher.result(),
+                       hash_proof, FMT(annotation, ".new_hash")),
+        zk_merkle_existence(pb, config::MERKLE_DEEP, merkle_position,
                             merkle_tree_IVs(pb), state.hasher.result(),
                             merkle_root, hash_proof,
                             FMT(annotation, ".existence")) {}
@@ -67,14 +68,14 @@ public:
   Account(ProtoboardT &pb, VariableT merkle_root, const std::string &annotation)
       : ethsnarks::GadgetT(pb, annotation), merkle_root(merkle_root),
         state(pb, annotation),
-        merkle_position(
-            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".position"))),
-        hash_proof(
-            make_var_array(pb, MERKLE_DEEP, FMT(annotation, ".hash_proof"))),
-        zk_merkle_path(pb, MERKLE_DEEP, merkle_position, merkle_tree_IVs(pb),
-                       state.next_hasher.result(), hash_proof,
-                       FMT(annotation, ".new_hash")),
-        zk_merkle_existence(pb, MERKLE_DEEP, merkle_position,
+        merkle_position(make_var_array(pb, config::MERKLE_DEEP,
+                                       FMT(annotation, ".position"))),
+        hash_proof(make_var_array(pb, config::MERKLE_DEEP,
+                                  FMT(annotation, ".hash_proof"))),
+        zk_merkle_path(pb, config::MERKLE_DEEP, merkle_position,
+                       merkle_tree_IVs(pb), state.next_hasher.result(),
+                       hash_proof, FMT(annotation, ".new_hash")),
+        zk_merkle_existence(pb, config::MERKLE_DEEP, merkle_position,
                             merkle_tree_IVs(pb), state.hasher.result(),
                             merkle_root, hash_proof,
                             FMT(annotation, ".existence")) {}
@@ -84,17 +85,18 @@ public:
     this->zk_merkle_existence.generate_r1cs_constraints();
   }
 
-  void generate_r1cs_constraints_send(VariableT amount) {
+  void generate_r1cs_constraints_send(
+      libsnark::dual_variable_gadget<FieldT> amount) {
     this->state.generate_r1cs_constraints_send(amount);
     this->generate_r1cs_constraints_state_update();
   }
 
-  void generate_r1cs_constraints_receive(VariableT amount) {
+  void generate_r1cs_constraints_receive(
+      libsnark::dual_variable_gadget<FieldT> amount) {
     this->state.generate_r1cs_constraints_receive(amount);
     this->generate_r1cs_constraints_state_update();
   }
 
-  void generate_r1cs_witness_send(json witness) {}
   /*
    * verify node and update node
    */
@@ -122,9 +124,6 @@ public:
     this->state.generate_r1cs_witness_receive(account, amount);
     zk_merkle_existence.generate_r1cs_witness();
     zk_merkle_path.generate_r1cs_witness();
-
-    this->pb.val(state.next_balance).print();
-    this->pb.val(state.next_nonce).print();
   }
   VariableT current_root() { return zk_merkle_path.result(); }
   FieldT current_root_value() { return pb.val(zk_merkle_path.result()); }

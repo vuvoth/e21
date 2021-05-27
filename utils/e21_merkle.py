@@ -56,7 +56,10 @@ class ZkRollup(object):
 
     def create_account(self): 
         k, public_key = EdDSA.random_keypair()
-        account = Account(public_key, FQ(0), FQ(0))
+        #k = FQ(self.account_number + 1)
+
+        #public_key = self.signature.B() * k
+        account = Account(public_key, 0, 0)
         self.add_account(account);
         self.state[self.account_number] = account;
         self.client_data[self.account_number] = k
@@ -96,7 +99,7 @@ class ZkRollup(object):
 
         sender = self.get_account_by_index(sender_id)
         receiver = self.get_account_by_index(receiver_id)
-
+        
         tx_proof = {
                 "sender_proof": self.get_proof(sender_id),
                 "receiver_proof": self.get_proof(receiver_id), 
@@ -106,18 +109,22 @@ class ZkRollup(object):
 
         tx_proof["sender_proof"]["merkle_root"] = str(FQ(self.merkle_tree.root));
 
+        raw_m = [FQ(sender_id, 1<<TREE_DEEP), FQ(receiver_id, 1 << TREE_DEEP), FQ(amount, 1 << TREE_DEEP), FQ(sender.nonce, 1 << TREE_DEEP)] 
+        
+        sig_m = self.signature.to_bits(*raw_m)
+
+        tx_sign = self.signature.sign(sig_m, self.client_data[sender_id])
+
         sender.sendAsset(amount)
         receiver.receiveAsset(amount)
 
-        raw_m = [FQ(sender_id), FQ(receiver_id), FQ(amount), FQ(sender.nonce)] 
-
-        m_sig = self.signature.to_bytes(*raw_m)
+        #print(len(sig_m)); 
+        #print(sig_m.hex());
         
-        tx_sign = self.signature.sign(m_sig, self.client_data[sender_id])
-        
+        #print(self.signature.verify(sender.public_key, tx_sign.sig, sig_m))
         tx_proof['signature'] = {
-                "R.x": str(tx_sign.sig.R.x),
-                "R.y": str(tx_sign.sig.R.y),
+                "R_x": str(tx_sign.sig.R.x),
+                "R_y": str(tx_sign.sig.R.y),
                 "s": str(tx_sign.sig.s)
                 }
         tx_proof["amount"]= str(amount)        
@@ -128,7 +135,6 @@ class ZkRollup(object):
 
         self.update(receiver_id, receiver)
 
-
         print(json.dumps(tx_proof))
         return tx_proof
         
@@ -137,7 +143,9 @@ zkm_tree = ZkRollup()
 zkm_tree.create_account();
 zkm_tree.create_account();
 
-zkm_tree.set_account_balance(0, FQ(1000))
+zkm_tree.set_account_balance(0, FQ(3, 1 << TREE_DEEP))
 
-zkm_tree.tranfer_asset(0, 1, FQ(10))
+zkm_tree.tranfer_asset(0, 1, FQ(1, 1<< TREE_DEEP))
 #zkm_tree.tranfer_asset(1, 0, FQ(8))
+
+

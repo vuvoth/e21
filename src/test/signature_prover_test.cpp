@@ -1,42 +1,43 @@
 #include <gtest/gtest.h>
 
-#include <ethsnarks.hpp>
-
 #include "zkproof/signature.hpp"
+#include <ethsnarks.hpp>
+#include <utils.hpp>
 
 TEST(SignatureProver, verirySignature) {
   ethsnarks::ppT::init_public_params();
   ethsnarks::ProtoboardT pb;
   ethsnarks::jubjub::Params params;
 
-  //  const std::string annotation = "TestRunable";
+  ethsnarks::VariableArrayT message(make_var_array(pb, 12, ".message"));
 
-  // e21::SignatureGadget signatureProver(pb, params, annotation);
+  const std::string annotation = "TestRunable";
 
-  // signatureProver.generate_r1cs_constraints();
+  const auto msg = ethsnarks::bytes_to_bv((const uint8_t *)"2a", 2);
+  const auto msg_sign_bits = ethsnarks::make_var_array(pb, msg.size(), "msg");
 
-  // const ethsnarks::jubjub::EdwardsPoint pubKey(
-  // FieldT("33367188117991498929163318894956930911972567618380288662114016698"
-  //"7382124337"),
-  // FieldT("40504366163250760466008911358283130782485844497679559050067788579"
-  //"58871314574"));
+  msg_sign_bits.fill_with_bits(pb, msg);
 
-  // const ethsnarks::jubjub::EdwardsPoint R(
-  // FieldT("17815983127755465894346158776246779862712623073638768513395595796"
-  //"132990361464"),
-  // FieldT("94717445362410632144273639689032308685114372875426915125777650869"
-  //"9019857364"));
+  const ethsnarks::jubjub::EdwardsPoint pubKey(
+      FieldT("17002285767664649889110177448197328998737537461817974044749636759"
+             "157089730807"),
+      FieldT("13462715376257498982987951911122614658822878439125926054874724264"
+             "566802029873"));
+  const ethsnarks::jubjub::EdwardsPoint R(
+      FieldT("15113412844773325854448466051967465375661695898686485086822041099"
+             "117228475637"),
+      FieldT("18469197527470849250351077798585526419605703495972159547880034601"
+             "175643334070"));
 
-  // const auto s =
-  // FieldT("133418148654731458000302070904876874175996208474057357"
-  //"06082771659861699337012");
+  const auto s = FieldT("589035397821776268059523352892307953329128385913159450"
+                        "5988249149095493083670");
 
-  // const auto msg = ethsnarks::bytes_to_bv((const uint8_t *)"abcd", 4);
-  // const auto msg_sign_bits = ethsnarks::make_var_array(pb, msg.size(),
-  // "msg"); msg_sign_bits.fill_with_bits(pb, msg);
+  e21::SignatureGadget signatureProver(pb, params, msg_sign_bits, annotation);
 
-  // e21::SignatureSchema signatureSchema(pubKey, R, s, msg);
+  signatureProver.generate_r1cs_constraints();
 
-  // signatureProver.generate_r1cs_witness(signatureSchema);
-  // EXPECT_EQ(true, pb.is_satisfied());
+  e21::SignatureSchema signatureSchema(pubKey, R, s);
+
+  signatureProver.generate_r1cs_witness(signatureSchema);
+  EXPECT_EQ(true, pb.is_satisfied());
 }

@@ -32,6 +32,16 @@ target_link_libraries(
 
 
 add_executable(
+  account_receive_test
+  account_receive_test.cpp 
+)
+
+target_link_libraries(
+  account_receive_test 
+  ethsnarks_jubjub
+  gtest_main
+)
+add_executable(
   transaction_gadget_test 
   transaction_gadget_test.cpp 
 )

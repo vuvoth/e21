@@ -1,10 +1,11 @@
 #ifndef SRC_ZKPROOF_INCLUDE_SIGNATURE_H_
 #define SRC_ZKPROOF_INCLUDE_SIGNATURE_H_
 
+#include "base_state.hpp"
+#include "config.h"
+#include "include/tx_data.h"
 #include <jubjub/eddsa.hpp>
 #include <jubjub/point.hpp>
-
-#include "include/tx_data.h"
 
 using String = std::string;
 using Protoboard = ethsnarks::ProtoboardT;
@@ -27,19 +28,8 @@ public:
   ethsnarks::jubjub::PureEdDSA zkSignature;
 
   SignatureGadget(Protoboard &pb, const CurveParameter &params,
+                  const VariableArrayT &_message,
                   const String &annotation_prefix)
-
-      : GadgetT(pb, annotation_prefix),
-        pubKey(pb, FMT(annotation_prefix, ".publicKey")),
-        R(pb, FMT(annotation_prefix, ".R")),
-        s(make_var_array(pb, ethsnarks::FieldT::size_in_bits(),
-                         FMT(annotation_prefix, ".s"))),
-        message(make_var_array(pb, ethsnarks::FieldT::size_in_bits(),
-                               FMT(annotation_prefix, ".message"))),
-        zkSignature(pb, params, EdwardsPoint(params.Gx, params.Gy), pubKey, R,
-                    s, message, FMT(annotation_prefix, ".verify")) {}
-  SignatureGadget(Protoboard &pb, const CurveParameter &params,
-                  VariableArrayT _message, const String &annotation_prefix)
 
       : GadgetT(pb, annotation_prefix),
         pubKey(pb, FMT(annotation_prefix, ".publicKey")),
@@ -58,9 +48,6 @@ public:
     this->pb.val(R.y) = signature.R.y;
 
     s.fill_with_bits_of_field_element(this->pb, signature.s);
-    // message in hash
-    message.fill_with_bits(this->pb, signature.message);
-
     zkSignature.generate_r1cs_witness();
   }
 

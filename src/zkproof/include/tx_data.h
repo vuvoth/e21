@@ -18,12 +18,17 @@ public:
   ethsnarks::jubjub::EdwardsPoint pubKey;
   ethsnarks::jubjub::EdwardsPoint R;
   ethsnarks::FieldT s;
-  libff::bit_vector message;
 
   SignatureSchema(const decltype(pubKey) in_pubKey, const decltype(R) in_R,
-                  const decltype(s) in_s, const decltype(message) in_message)
-      : pubKey(in_pubKey), R(in_R), s(in_s), message(in_message) {}
-  void setMessage() {}
+                  const decltype(s) in_s)
+      : pubKey(in_pubKey), R(in_R), s(in_s) {}
+
+  SignatureSchema(json witness, const String &role)
+      : pubKey(FieldT(witness[role]["public_key_x"].get<String>().c_str()),
+               FieldT(witness[role]["public_key_y"].get<String>().c_str())),
+        R(FieldT(witness["signature"]["R_x"].get<String>().c_str()),
+          FieldT(witness["signature"]["R_y"].get<String>().c_str())),
+        s(FieldT(witness["signature"]["s"].get<String>().c_str())) {}
 };
 
 class MerkleProof {
@@ -32,6 +37,14 @@ public:
   ethsnarks::FieldT merkle_address;
   std::vector<ethsnarks::FieldT> hash_proof;
 
+  MerkleProof(FieldT merkle_root, json witness)
+      : merkle_root(merkle_root),
+        merkle_address(witness["address"].get<String>().c_str()) {
+    this->hash_proof.clear();
+    for (auto e : witness["hash_proof"]) {
+      this->hash_proof.push_back(FieldT(e.get<String>().c_str()));
+    }
+  }
   MerkleProof(json witness)
       : merkle_root(FieldT(witness["merkle_root"].get<String>().c_str())),
         merkle_address(witness["address"].get<String>().c_str()) {
@@ -71,18 +84,27 @@ public:
 
 class TxData {
 public:
-  TxData(AccountDetail sender, AccountDetail receiver, FieldT amount,
-         MerkleProof sender_proof, MerkleProof receiver_proof,
-         SignatureSchema signature)
-      : sender(sender), receiver(receiver), amount(amount),
-        signature(signature), sender_proof(sender_proof),
-        receiver_proof(receiver_proof) {}
   SignatureSchema signature;
   AccountDetail sender;
   AccountDetail receiver;
   FieldT amount;
   MerkleProof sender_proof;
   MerkleProof receiver_proof;
+
+  TxData(AccountDetail sender, AccountDetail receiver, FieldT amount,
+         MerkleProof sender_proof, MerkleProof receiver_proof,
+         SignatureSchema signature)
+      : sender(sender), receiver(receiver), amount(amount),
+        signature(signature), sender_proof(sender_proof),
+        receiver_proof(receiver_proof) {}
+
+  TxData(json witness)
+      : sender(witness["sender"]), receiver(witness["receiver"]),
+        sender_proof(witness["sender_proof"]),
+        receiver_proof(FieldT("0"), witness["receiver_proof"]),
+        signature(witness, "sender"),
+        amount(FieldT(witness["amount"].get<String>().c_str())) {}
 };
+
 } // namespace e21
 #endif
