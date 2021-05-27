@@ -39,6 +39,16 @@ public:
                                     sender.state.nonce.bits})),
         signatureGadget(pb, params, message, FMT(annotation, ".signature")) {}
 
+  TransactionGadget(ProtoboardT &pb, const Params &params,
+                    const VariableT &merkle_root, const std::string &annotation)
+      : GadgetT(pb, annotation), amount(pb, config::FIELD_SIZE, ".amount"),
+        sender(pb, merkle_root, FMT(annotation, ".sender")),
+        receiver(pb, sender.current_root(), FMT(annotation, ".receiver")),
+        message(ethsnarks::flatten({sender.merkle_position,
+                                    receiver.merkle_position, amount.bits,
+                                    sender.state.nonce.bits})),
+        signatureGadget(pb, params, message, FMT(annotation, ".signature")) {}
+
   void generate_r1cs_constraints() {
     this->amount.generate_r1cs_constraints(true);
     signatureGadget.generate_r1cs_constraints();
@@ -53,8 +63,8 @@ public:
                                             tx.amount);
     tx.receiver_proof.merkle_root = sender.current_root_value();
 
-    tx.receiver_proof.hash_proof[0] =
-        this->pb.val(sender.state.next_hasher.result());
+    auto receiver_addr = tx.receiver_proof.merkle_address.as_ulong();
+    auto sender_addr = tx.sender_proof.merkle_address.as_ulong();
 
     this->receiver.generate_r1cs_witness_receive(tx.receiver_proof, tx.receiver,
                                                  tx.amount);

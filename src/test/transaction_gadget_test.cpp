@@ -23,6 +23,7 @@ TEST(TransactionGadget_Test, veriry_transaction) {
   std::ifstream is(test_data_file_path);
 
   auto input = json::parse(is);
+
   is.close();
 
   zkTx.generate_r1cs_constraints();

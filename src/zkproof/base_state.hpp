@@ -82,7 +82,6 @@ public:
     this->pb.val(this->balanace) = account.balance;
     this->pb.val(this->next_nonce) = account.nonce + 1;
     this->pb.val(this->next_balance) = account.balance - amount;
-    this->pb.val(this->next_balance).print();
     this->nonce.generate_r1cs_witness_from_packed();
     hasher.generate_r1cs_witness();
     next_hasher.generate_r1cs_witness();

@@ -65,7 +65,8 @@ public:
                             merkle_root, hash_proof,
                             FMT(annotation, ".existence")) {}
 
-  Account(ProtoboardT &pb, VariableT merkle_root, const std::string &annotation)
+  Account(ProtoboardT &pb, const VariableT &merkle_root,
+          const std::string &annotation)
       : ethsnarks::GadgetT(pb, annotation), merkle_root(merkle_root),
         state(pb, annotation),
         merkle_position(make_var_array(pb, config::MERKLE_DEEP,

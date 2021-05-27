@@ -1,3 +1,5 @@
+import sys
+import random
 from ethsnarks.merkletree import MerkleTree
 from ethsnarks.field import FQ
 from ethsnarks.mimc import *
@@ -6,8 +8,8 @@ from ethsnarks.jubjub import Point
 
 from copy import copy, deepcopy
 import json
-TREE_DEEP = 2
-
+TREE_DEEP = 10
+AMOUNT_SIZE = 20
 
 class Account(object):
     def __init__(self, public_key, balance, nonce):
@@ -27,6 +29,8 @@ class Account(object):
     
     def receiveAsset(self, amount):
         self.balance = self.balance + amount
+    def getBalance(self):
+        return self.balance
     def toDict(self):
         return {
                 "public_key_x": str(self.public_key.x),
@@ -66,6 +70,7 @@ class ZkRollup(object):
         self.account_number = self.account_number + 1
 
     def update(self, index, account):
+        self.state[index] = account
         self.merkle_tree.update(index, self.hash_leaf(account))
     
     def set_account_balance(self, index, balance):
@@ -102,50 +107,67 @@ class ZkRollup(object):
         
         tx_proof = {
                 "sender_proof": self.get_proof(sender_id),
-                "receiver_proof": self.get_proof(receiver_id), 
                 "sender": sender.toDict(), 
-                "receiver": receiver.toDict(),
         }
 
         tx_proof["sender_proof"]["merkle_root"] = str(FQ(self.merkle_tree.root));
 
-        raw_m = [FQ(sender_id, 1<<TREE_DEEP), FQ(receiver_id, 1 << TREE_DEEP), FQ(amount, 1 << TREE_DEEP), FQ(sender.nonce, 1 << TREE_DEEP)] 
-        
+        raw_m = [FQ(sender_id, 1<<TREE_DEEP), FQ(receiver_id, 1 << TREE_DEEP), FQ(amount, 1 << AMOUNT_SIZE), FQ(sender.nonce, 1 << TREE_DEEP)] 
         sig_m = self.signature.to_bits(*raw_m)
-
         tx_sign = self.signature.sign(sig_m, self.client_data[sender_id])
 
-        sender.sendAsset(amount)
-        receiver.receiveAsset(amount)
-
-        #print(len(sig_m)); 
-        #print(sig_m.hex());
-        
-        #print(self.signature.verify(sender.public_key, tx_sign.sig, sig_m))
         tx_proof['signature'] = {
                 "R_x": str(tx_sign.sig.R.x),
                 "R_y": str(tx_sign.sig.R.y),
                 "s": str(tx_sign.sig.s)
                 }
+
         tx_proof["amount"]= str(amount)        
 
+        sender.sendAsset(amount)
         self.update(sender_id, sender)
 
         tx_proof["middle_root"] = str(self.merkle_tree.root);
+        
+        tx_proof["receiver_proof"] = self.get_proof(receiver_id)
+        tx_proof["receiver"] = receiver.toDict();
 
+        receiver.receiveAsset(amount)
         self.update(receiver_id, receiver)
 
-        print(json.dumps(tx_proof))
         return tx_proof
         
-zkm_tree = ZkRollup()
 
-zkm_tree.create_account();
-zkm_tree.create_account();
+def main():
+    args = sys.argv[1:]
+    total_account = int(args[0])
+    number_tx = int(args[1])
+    out_file_path = args[2]    
 
-zkm_tree.set_account_balance(0, FQ(3, 1 << TREE_DEEP))
+    tx_proof = {
+            "number_tx": number_tx
+            }
+    zkr = ZkRollup();
+    for i in range(total_account):     
+        zkr.create_account();
+        zkr.set_account_balance(i, FQ(1000, 1 << AMOUNT_SIZE))
 
-zkm_tree.tranfer_asset(0, 1, FQ(1, 1<< TREE_DEEP))
-#zkm_tree.tranfer_asset(1, 0, FQ(8))
+    for i in range(number_tx):    
+        while True:
+          sender_id = random.randrange(0, total_account)
+          receiver_id = random.randrange(0, total_account)
+          if(sender_id != receiver_id): break;
 
+        sender = zkr.get_account_by_index(sender_id)
+        amount = random.randrange(1, sender.balance)
+        
+        tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
+        
+        print(sender_id, zkr.get_account_by_index(sender_id).get_details())
+        print(receiver_id,zkr.get_account_by_index(receiver_id).get_details())
+
+    with open(out_file_path, "w") as out_file: 
+        json.dump(tx_proof, out_file, indent=4)
+
+main()
 
