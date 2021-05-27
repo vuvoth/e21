@@ -148,11 +148,16 @@ def main():
             "number_tx": number_tx
             }
     zkr = ZkRollup();
+    print("Create account.....")
     for i in range(total_account):     
+        if (i  + 1) % 10 == 0:
+            print("Creating and init data from user %d to %d..." %((i - 9), i))
         zkr.create_account();
         zkr.set_account_balance(i, FQ(1000, 1 << AMOUNT_SIZE))
-
+    print("Create transaction.......")
     for i in range(number_tx):    
+        if (i  + 1) % 10 == 0:
+            print("Creating transaction %d => %d..." %((i - 9), i))
         while True:
           sender_id = random.randrange(0, total_account)
           receiver_id = random.randrange(0, total_account)
@@ -163,9 +168,8 @@ def main():
         
         tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
         
-        print(sender_id, zkr.get_account_by_index(sender_id).get_details())
-        print(receiver_id,zkr.get_account_by_index(receiver_id).get_details())
 
+    tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
     with open(out_file_path, "w") as out_file: 
         json.dump(tx_proof, out_file, indent=4)
 
