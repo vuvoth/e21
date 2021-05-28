@@ -16,6 +16,7 @@
 #include "zkproof/config.h"
 
 using ethsnarks::GadgetT;
+using ethsnarks::LinearCombinationT;
 using ethsnarks::VariableT;
 using ethsnarks::jubjub::Params;
 /*
@@ -23,6 +24,7 @@ using ethsnarks::jubjub::Params;
  */
 namespace e21 {
 class TransactionGadget : public GadgetT {
+
 public:
   Account sender, receiver;
   libsnark::dual_variable_gadget<FieldT> amount;
