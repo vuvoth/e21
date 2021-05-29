@@ -8,8 +8,8 @@ from ethsnarks.jubjub import Point
 
 from copy import copy, deepcopy
 import json
-TREE_DEEP = 10
-AMOUNT_SIZE = 20
+TREE_DEEP = 16
+AMOUNT_SIZE = 32
 
 class Account(object):
     def __init__(self, public_key, balance, nonce):

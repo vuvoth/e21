@@ -44,3 +44,7 @@ accountId_from || accountId_to || amount
 
 
 
+### 
+
+zkSnark input = ( sha256(inputs), new_root, old_root)
+

@@ -42,9 +42,9 @@ class Account : public ethsnarks::GadgetT {
 
 public:
   VariableT merkle_root;
-  VariableArrayT merkle_position;
+  libsnark::dual_variable_gadget<FieldT> account_id;
   VariableArrayT hash_proof;
-  BaseStateGadget state;
+  Account_State state;
 
   ZK_Merkle_Path zk_merkle_path;
   ZK_Merkle_Existence zk_merkle_existence;
@@ -53,35 +53,35 @@ public:
       : ethsnarks::GadgetT(pb, annotation),
         merkle_root(make_variable(pb, FMT(annotation, ".merkle_root"))),
         state(pb, FMT(annotation, ".state")),
-        merkle_position(make_var_array(pb, config::MERKLE_DEEP,
-                                       FMT(annotation, ".position"))),
+        account_id(pb, config::MERKLE_DEEP, FMT(annotation, ".account_id")),
         hash_proof(make_var_array(pb, config::MERKLE_DEEP,
                                   FMT(annotation, ".hash_proof"))),
-        zk_merkle_path(pb, config::MERKLE_DEEP, merkle_position,
+        zk_merkle_path(pb, config::MERKLE_DEEP, account_id.bits,
                        merkle_tree_IVs(pb), state.next_hasher.result(),
                        hash_proof, FMT(annotation, ".new_hash")),
-        zk_merkle_existence(pb, config::MERKLE_DEEP, merkle_position,
+        zk_merkle_existence(pb, config::MERKLE_DEEP, account_id.bits,
                             merkle_tree_IVs(pb), state.hasher.result(),
                             merkle_root, hash_proof,
                             FMT(annotation, ".existence")) {}
 
   Account(ProtoboardT &pb, const VariableT &merkle_root,
           const std::string &annotation)
-      : ethsnarks::GadgetT(pb, annotation), merkle_root(merkle_root),
-        state(pb, annotation),
-        merkle_position(make_var_array(pb, config::MERKLE_DEEP,
-                                       FMT(annotation, ".position"))),
+      : ethsnarks::GadgetT(pb, annotation),
+        merkle_root(make_variable(pb, FMT(annotation, ".merkle_root"))),
+        state(pb, FMT(annotation, ".state")),
+        account_id(pb, config::MERKLE_DEEP, FMT(annotation, ".account_id")),
         hash_proof(make_var_array(pb, config::MERKLE_DEEP,
                                   FMT(annotation, ".hash_proof"))),
-        zk_merkle_path(pb, config::MERKLE_DEEP, merkle_position,
+        zk_merkle_path(pb, config::MERKLE_DEEP, account_id.bits,
                        merkle_tree_IVs(pb), state.next_hasher.result(),
                        hash_proof, FMT(annotation, ".new_hash")),
-        zk_merkle_existence(pb, config::MERKLE_DEEP, merkle_position,
+        zk_merkle_existence(pb, config::MERKLE_DEEP, account_id.bits,
                             merkle_tree_IVs(pb), state.hasher.result(),
                             merkle_root, hash_proof,
                             FMT(annotation, ".existence")) {}
 
   void generate_r1cs_constraints_state_update() {
+    this->account_id.generate_r1cs_constraints(true);
     this->zk_merkle_path.generate_r1cs_constraints();
     this->zk_merkle_existence.generate_r1cs_constraints();
   }
@@ -107,8 +107,8 @@ public:
     this->pb.val(this->merkle_root) = merkle_proof.merkle_root;
     this->hash_proof.fill_with_field_elements(this->pb,
                                               merkle_proof.hash_proof);
-    this->merkle_position.fill_with_bits_of_field_element(
-        this->pb, merkle_proof.merkle_address);
+    this->pb.val(this->account_id.packed) = merkle_proof.merkle_address;
+    this->account_id.generate_r1cs_witness_from_packed();
     this->state.generate_r1cs_witness_send(account, amount);
     zk_merkle_existence.generate_r1cs_witness();
     zk_merkle_path.generate_r1cs_witness();
@@ -120,8 +120,9 @@ public:
     this->pb.val(this->merkle_root) = merkle_proof.merkle_root;
     this->hash_proof.fill_with_field_elements(this->pb,
                                               merkle_proof.hash_proof);
-    this->merkle_position.fill_with_bits_of_field_element(
-        this->pb, merkle_proof.merkle_address);
+
+    this->pb.val(this->account_id.packed) = merkle_proof.merkle_address;
+    this->account_id.generate_r1cs_witness_from_packed();
     this->state.generate_r1cs_witness_receive(account, amount);
     zk_merkle_existence.generate_r1cs_witness();
     zk_merkle_path.generate_r1cs_witness();

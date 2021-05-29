@@ -8,6 +8,8 @@
 #include "jubjub/point.hpp"
 #include "libsnark/gadgetlib1/gadget.hpp"
 #include "libsnark/gadgetlib1/gadgets/basic_gadgets.hpp"
+#include "libsnark/relations/constraint_satisfaction_problems/r1cs/r1cs.tcc"
+#include "libsnark/relations/variable.hpp"
 #include <ethsnarks.hpp>
 #include <string>
 #include <utils.hpp>
@@ -24,24 +26,26 @@ using ethsnarks::VariableArrayT;
 using ethsnarks::VariableT;
 using ethsnarks::jubjub::VariablePointT;
 
-class BaseStateGadget : public GadgetT {
+class Account_State : public GadgetT {
 public:
   VariablePointT publicKey;
-  VariableT balanace;
-  VariableT next_balance;
+  VariableT balance;
   libsnark::dual_variable_gadget<FieldT> nonce;
+
+  VariableT next_balance;
   VariableT next_nonce;
+
   MiMC_e7_hash_gadget hasher;
   MiMC_e7_hash_gadget next_hasher;
 
-  BaseStateGadget(ProtoboardT &pb, const std::string annotation)
+  Account_State(ProtoboardT &pb, const std::string annotation)
       : GadgetT(pb, annotation), publicKey(pb, FMT(annotation, ".publicKey")),
+        balance(make_variable(pb, FMT(annotation, "balance"))),
         nonce(pb, config::MERKLE_DEEP, ".nonce"),
-        balanace(make_variable(pb, FMT(annotation, ".balanace"))),
         next_nonce(make_variable(pb, ".nonce")),
         next_balance(make_variable(pb, FMT(annotation, ".next_balanace"))),
         hasher(pb, make_variable(pb, FieldT::one(), "iv"),
-               {publicKey.x, publicKey.y, balanace, nonce.packed},
+               {publicKey.x, publicKey.y, balance, nonce.packed},
                FMT(annotation, ".hash")),
         next_hasher(pb, make_variable(pb, FieldT::one(), "iv"),
                     {publicKey.x, publicKey.y, next_balance, next_nonce},
@@ -52,7 +56,7 @@ public:
     this->pb.add_r1cs_constraint(ConstraintT(this->nonce.packed + FieldT::one(),
                                              FieldT::one(), this->next_nonce),
                                  "nonce + 1 = next_nonce");
-    this->pb.add_r1cs_constraint(ConstraintT(this->balanace - amount.packed,
+    this->pb.add_r1cs_constraint(ConstraintT(this->balance - amount.packed,
                                              FieldT::one(), this->next_balance),
                                  "balance - amount = next_balance");
     this->generate_r1cs_hasher_constraints();
@@ -63,9 +67,10 @@ public:
     this->pb.add_r1cs_constraint(
         ConstraintT(this->nonce.packed, FieldT::one(), this->next_nonce),
         "nonce = next_nonce");
-    this->pb.add_r1cs_constraint(ConstraintT(this->balanace + amount.packed,
-                                             FieldT::one(), this->next_balance),
-                                 "balance + amount = next_balance");
+    this->pb.add_r1cs_constraint(
+        ConstraintT(this->balance + amount.packed, FieldT::one(),
+                    this->next_balance),
+        "balance + amount = next_balance");
     this->generate_r1cs_hasher_constraints();
   }
 
@@ -79,7 +84,7 @@ public:
     this->pb.val(this->publicKey.x) = account.public_key.x;
     this->pb.val(this->publicKey.y) = account.public_key.y;
     this->pb.val(this->nonce.packed) = account.nonce;
-    this->pb.val(this->balanace) = account.balance;
+    this->pb.val(this->balance) = account.balance;
     this->pb.val(this->next_nonce) = account.nonce + 1;
     this->pb.val(this->next_balance) = account.balance - amount;
     this->nonce.generate_r1cs_witness_from_packed();
@@ -91,7 +96,7 @@ public:
     this->pb.val(this->publicKey.x) = account.public_key.x;
     this->pb.val(this->publicKey.y) = account.public_key.y;
     this->pb.val(this->nonce.packed) = account.nonce;
-    this->pb.val(this->balanace) = account.balance;
+    this->pb.val(this->balance) = account.balance;
     this->pb.val(this->next_nonce) = account.nonce;
     this->pb.val(this->next_balance) = account.balance + amount;
     this->nonce.generate_r1cs_witness_from_packed();

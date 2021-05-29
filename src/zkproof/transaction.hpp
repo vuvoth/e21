@@ -36,8 +36,8 @@ public:
       : GadgetT(pb, annotation), amount(pb, config::FIELD_SIZE, ".amount"),
         sender(pb, FMT(annotation, ".sender")),
         receiver(pb, sender.current_root(), FMT(annotation, ".receiver")),
-        message(ethsnarks::flatten({sender.merkle_position,
-                                    receiver.merkle_position, amount.bits,
+        message(ethsnarks::flatten({sender.account_id.bits,
+                                    receiver.account_id.bits, amount.bits,
                                     sender.state.nonce.bits})),
         signatureGadget(pb, params, message, FMT(annotation, ".signature")) {}
 
@@ -46,8 +46,8 @@ public:
       : GadgetT(pb, annotation), amount(pb, config::FIELD_SIZE, ".amount"),
         sender(pb, merkle_root, FMT(annotation, ".sender")),
         receiver(pb, sender.current_root(), FMT(annotation, ".receiver")),
-        message(ethsnarks::flatten({sender.merkle_position,
-                                    receiver.merkle_position, amount.bits,
+        message(ethsnarks::flatten({sender.account_id.bits,
+                                    receiver.account_id.bits, amount.bits,
                                     sender.state.nonce.bits})),
         signatureGadget(pb, params, message, FMT(annotation, ".signature")) {}
 
