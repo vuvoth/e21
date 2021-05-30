@@ -18,7 +18,9 @@ class Account(object):
         self.nonce = nonce
     
     def update_balance(self, balance):
-        self.balance = balance
+        self.balance = self.balance + balance 
+    def set_balance(self, balance): 
+        self.balance = balance;
 
     def get_details(self):
         return [self.public_key.x, self.public_key.y, self.balance, self.nonce]
@@ -73,10 +75,13 @@ class ZkRollup(object):
         self.state[index] = account
         self.merkle_tree.update(index, self.hash_leaf(account))
     
-    def set_account_balance(self, index, balance):
+    def update_account_balance(self, index, balance):
+        zero_account = self.get_account_by_index(0)
         account = self.get_account_by_index(index)
         account.update_balance(balance)
         self.update(index, account)
+        zero_account.update_balance(balance); 
+        self.update(0, zero_account);
 
     def get_proof(self, index):
         proof = self.merkle_tree.proof(index)
@@ -143,31 +148,46 @@ def main():
     total_account = int(args[0])
     number_tx = int(args[1])
     out_file_path = args[2]    
-
+    number_withdraw = int(args[3])
     tx_proof = {
-            "number_tx": number_tx
+            "number_tx": number_tx + number_withdraw
             }
     zkr = ZkRollup();
     print("Create account.....")
-    for i in range(total_account):     
+    for i in range(0, total_account):     
         if (i  + 1) % 10 == 0:
             print("Creating and init data from user %d to %d..." %((i - 9), i))
         zkr.create_account();
-        zkr.set_account_balance(i, FQ(1000, 1 << AMOUNT_SIZE))
+        if i > 1:
+            zkr.update_account_balance(i, FQ(1000, 1 << AMOUNT_SIZE))
+
+    print("first root", zkr.merkle_tree.root);
     print("Create transaction.......")
     for i in range(number_tx):    
         if (i  + 1) % 10 == 0:
             print("Creating transaction %d => %d..." %((i - 9), i))
         while True:
-          sender_id = random.randrange(0, total_account)
-          receiver_id = random.randrange(0, total_account)
-          if(sender_id != receiver_id): break;
+            sender_id = random.randrange(1, total_account)
+            receiver_id = random.randrange(1, total_account)
+            if(sender_id != receiver_id): break;
 
         sender = zkr.get_account_by_index(sender_id)
         amount = random.randrange(1, sender.balance)
         
-        tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
+        tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE )) 
+
+    for i in range(number_withdraw):    
+        if (i  + 1) % 10 == 0:
+            print("Creating withdraw request %d => %d..." %((i - 9), i))
+        while True:
+            sender_id = 0
+            receiver_id = random.randrange(1, total_account)
+            if(sender_id != receiver_id): break;
+
+        receiver = zkr.get_account_by_index(receiver_id)
+        amount = receiver.balance;
         
+        tx_proof["tx" + str(i + number_tx)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
 
     tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
     with open(out_file_path, "w") as out_file: 

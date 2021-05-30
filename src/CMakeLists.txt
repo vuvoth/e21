@@ -1,21 +1,20 @@
 include_directories(.)
 
-
 add_subdirectory(test)
 add_subdirectory(zkproof)
 
 add_executable(
-  main
+  e21 
   main.cpp
 )
 
 target_link_libraries(
-  main 
+  e21 
   ethsnarks_jubjub
 )
 
 target_include_directories(
-  main 
+  e21 
   PUBLIC
   ${DEPENDS_DIR}/ethsnarks
 )

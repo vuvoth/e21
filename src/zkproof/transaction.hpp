@@ -11,6 +11,7 @@
 #include "jubjub/params.hpp"
 #include "libsnark/gadgetlib1/gadgets/basic_gadgets.hpp"
 #include "libsnark/gadgetlib1/gadgets/hashes/hash_io.hpp"
+#include "libsnark/gadgetlib1/pb_variable.hpp"
 #include "signature.hpp"
 #include "utils.hpp"
 #include "zkproof/config.h"
@@ -51,6 +52,19 @@ public:
                                     sender.state.nonce.bits})),
         signatureGadget(pb, params, message, FMT(annotation, ".signature")) {}
 
+  libsnark::dual_variable_gadget<FieldT> getSenderId() const {
+    return this->sender.account_id;
+  }
+
+  libsnark::dual_variable_gadget<FieldT> getReceiverId() const {
+    return this->receiver.account_id;
+  }
+  libsnark::dual_variable_gadget<FieldT> getTransactionNonce() const {
+    return this->sender.state.nonce;
+  }
+  libsnark::dual_variable_gadget<FieldT> getAmount() const {
+    return this->amount;
+  }
   void generate_r1cs_constraints() {
     this->amount.generate_r1cs_constraints(true);
     signatureGadget.generate_r1cs_constraints();

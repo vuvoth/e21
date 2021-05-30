@@ -24,20 +24,21 @@ public:
              const std::vector<TransactionGadget> &transaction_gadgets,
              VariableArrayT output_hashes, const std::string &annotation)
       : GadgetT(pb, annotation),
-        sha_system(pb,
-                   ethsnarks::flatten_reverse(getInputFromGadget(transaction_gadgets)),
-                   ".sha"),
+        sha_system(
+            pb,
+            ethsnarks::flatten_reverse(getInputFromGadget(transaction_gadgets)),
+            ".sha"),
         mpack(pb, sha_system.result().bits, output_hashes,
               libsnark::SHA256_digest_size / 2, "compare_hash"){};
 
-  std::vector<VariableArrayT> getInputFromGadget(
-      const std::vector<TransactionGadget> transaction_gadgets) {
+  std::vector<VariableArrayT>
+  getInputFromGadget(const std::vector<TransactionGadget> transaction_gadgets) {
     std::vector<VariableArrayT> result;
     for (auto gadget : transaction_gadgets) {
-      result.push_back(gadget.sender.account_id.bits);
-      result.push_back(gadget.receiver.account_id.bits);
-      result.push_back(gadget.amount.bits);
-      result.push_back(gadget.sender.state.nonce.bits);
+      result.push_back(gadget.getSenderId().bits);
+      result.push_back(gadget.getReceiverId().bits);
+      result.push_back(gadget.getAmount().bits);
+      result.push_back(gadget.getTransactionNonce().bits);
     }
     return result;
   }

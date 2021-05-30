@@ -83,8 +83,9 @@ void proof_transaction(
 int main(int argc, char **argv) {
 
   ethsnarks::ppT::init_public_params();
+  String sign = argv[1];
   // read transaction proof
-  String file_path = argv[1];
+  String file_path = argv[2];
   std::ifstream is(file_path);
   json txs = json::parse(is);
   is.close();
@@ -105,50 +106,27 @@ int main(int argc, char **argv) {
 
   e21::input_hash input_hash_gadget(pb, transaction_gadgets, public_hash,
                                     "check_inputhash");
+
   input_hash_gadget.generate_r1cs_constraints();
 
-  // include (sender_address, receiver_address, amount, nonce) * number_tx +
-  // old_root, new_root = number_tx * 4 + 2
-
   pb.set_input_sizes(4);
-  ethsnarks::stub_genkeys_from_pb(pb, "./prover_key.txt","./verifier_key.txt");
 
-  proof_transaction(pb, final_merkle_root, txs, number_tx, transaction_gadgets);
-  input_hash_gadget.generate_r1cs_witness();
-
-
-  //for (auto e : pb.primary_input()) {
-    //e.print();
-  //}
-
-   if (!pb.is_satisfied()) {
-   std::cout << "winess not true\n";
-   return 1;
-  } else {
-   auto json = ethsnarks::stub_prove_from_pb(pb, "./prover_key.txt");
-   ethsnarks::writeToFile("./winess.txt", json);
+  if (sign.compare("gen_key") == 0 || sign.compare("all") == 0) {
+    ethsnarks::stub_genkeys_from_pb(pb, "./prover_key.txt",
+                                    "./verifier_key.txt");
   }
 
-  //for (auto gadget : transaction_gadgets) {
-
-    //pb.val(gadget.sender.account_id.packed).print();
-    //pb.val(gadget.receiver.account_id.packed).print();
-    //pb.val(gadget.amount.packed).print();
-    //pb.val(gadget.sender.state.nonce.packed).print();
-  //}
-
-  //input_hash_gadget.mpack.packed_vars.get_vals(pb)[0].print();
-  //input_hash_gadget.mpack.packed_vars.get_vals(pb)[1].print();
-  //std::cout << input_hash_gadget.sha_system.result().digest_size << "\n";
-  //uint8_t hash[32];
-  //ethsnarks::bv_to_bytes(input_hash_gadget.sha_system.result().get_digest(),
-                         //hash);
-
-  //uint8_t ibits;
-
-  //for (uint8_t x : hash) {
-    //std::printf("%02X", x);
-  //}
-  //cout << "\n";
+  if (sign.compare("witness") == 0 || sign.compare("all") == 0) {
+    proof_transaction(pb, final_merkle_root, txs, number_tx,
+                      transaction_gadgets);
+    input_hash_gadget.generate_r1cs_witness();
+    if (!pb.is_satisfied()) {
+      std::cout << "winess not true\n";
+      return 1;
+    } else {
+      auto json = ethsnarks::stub_prove_from_pb(pb, "./prover_key.txt");
+      ethsnarks::writeToFile("./winess.txt", json);
+    }
+  }
   return 0;
 }
