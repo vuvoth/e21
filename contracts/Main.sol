@@ -97,14 +97,16 @@ contract Main {
         uint16 nonce
       ) = transaction_input_content(transaction_inputs, index);
       
-      if (sender_id == 0) {
+      if (receiver_id == 0) {
         // move out layer 2
-        IERC20(token_address).transfer(EthAddressOf[receiver_id], amount);
+        if(amount > 0)
+          IERC20(token_address).transfer(EthAddressOf[sender_id], amount);
       } 
-      else if (receiver_id == 0) {
+      else if (sender_id == 0) {
         // move in player 2
         if (EthAddressOf[sender_id] != address(0))
-          IERC20(token_address).transferFrom(EthAddressOf[sender_id], address(this), amount);
+          if (amount > 0)
+          IERC20(token_address).transferFrom(EthAddressOf[receiver_id], address(this), amount);
       } 
     }
     return true;

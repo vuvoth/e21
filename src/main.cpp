@@ -85,13 +85,14 @@ int main(int argc, char **argv) {
   ethsnarks::ppT::init_public_params();
   String sign = argv[1];
   // read transaction proof
-  String file_path = argv[2];
+  String pk_path = argv[2], vk_path = argv[3];
+  String file_path = argv[4];
+
   std::ifstream is(file_path);
   json txs = json::parse(is);
   is.close();
 
   int number_tx = txs["number_tx"].get<int>();
-
   std::vector<e21::TransactionGadget> transaction_gadgets;
 
   ethsnarks::ProtoboardT pb;
@@ -110,11 +111,11 @@ int main(int argc, char **argv) {
   input_hash_gadget.generate_r1cs_constraints();
 
   pb.set_input_sizes(4);
-
-  if (sign.compare("gen_key") == 0 || sign.compare("all") == 0) {
-    ethsnarks::stub_genkeys_from_pb(pb, "./prover_key.txt",
-                                    "./verifier_key.txt");
+  
+  if (sign.compare("genkey") == 0 || sign.compare("all") == 0) {
+    ethsnarks::stub_genkeys_from_pb(pb, pk_path.c_str(), vk_path.c_str());
   }
+  
 
   if (sign.compare("witness") == 0 || sign.compare("all") == 0) {
     proof_transaction(pb, final_merkle_root, txs, number_tx,
@@ -124,8 +125,9 @@ int main(int argc, char **argv) {
       std::cout << "winess not true\n";
       return 1;
     } else {
-      auto json = ethsnarks::stub_prove_from_pb(pb, "./prover_key.txt");
-      ethsnarks::writeToFile("./winess.txt", json);
+      String witness_path = argv[5];
+      auto json = ethsnarks::stub_prove_from_pb(pb, pk_path.c_str());
+      ethsnarks::writeToFile(witness_path.c_str(), json);
     }
   }
   return 0;

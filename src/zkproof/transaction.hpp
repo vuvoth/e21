@@ -79,9 +79,6 @@ public:
                                             tx.amount);
     tx.receiver_proof.merkle_root = sender.current_root_value();
 
-    auto receiver_addr = tx.receiver_proof.merkle_address.as_ulong();
-    auto sender_addr = tx.sender_proof.merkle_address.as_ulong();
-
     this->receiver.generate_r1cs_witness_receive(tx.receiver_proof, tx.receiver,
                                                  tx.amount);
 

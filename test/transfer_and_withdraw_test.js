@@ -34,58 +34,86 @@ function createTxInputs(state) {
   return transaction_inputs;
 }
 
-describe("Verifier testing", function () {
+
+function readProof(vk_path, witness_path, data_path) {
+  vk = JSON.parse(fs.readFileSync(vk_path).toString());
+  proof = JSON.parse(fs.readFileSync(witness_path).toString());
+  state = JSON.parse(fs.readFileSync(data_path).toString());
+  let inVk = _.flattenDeep([vk.alpha, vk.beta, vk.gamma, vk.delta]);
+  let vkGammaABC = _.flattenDeep(vk.gammaABC);
+  let inProof = _.flattenDeep([proof.A, proof.B, proof.C]);
+  let input = proof.input;
+
+  return {
+    params: [inVk, vkGammaABC, inProof], 
+    public_input: input,
+    data: state
+  }
+}
+
+describe("Transaction and withdraw", function () {
   let vk, proof;
   let state;
   let MyToken, Main, erc20Token;
   let accounts, owner, instance;
   before(async function () {
-    vk = JSON.parse(fs.readFileSync("./verify_key.txt").toString());
-    proof = JSON.parse(fs.readFileSync("./witness_transaction.json").toString());
-    state = JSON.parse(fs.readFileSync("./roll_up_transaction.json").toString());
+
+    let proof = readProof("./verify_key.txt", "./witness_transaction.json", "roll_up_transaction.json");
 
     Main = await ethers.getContractFactory("Main");
     MyToken = await ethers.getContractFactory("MyToken");
     erc20Token = await MyToken.deploy(1000000);
     instance = await Main.deploy(
-      proof.input[proof.input.length - 1],
+      proof.public_input[3],
       erc20Token.address
     );
-    [owner, ...accounts] = await ethers.getSigners();
 
+    [owner, ...accounts] = await ethers.getSigners();
+    console.log("       Init token......")
     for (let account of accounts) {
       await erc20Token.transfer(account.address, 1000);
-      console.log(`Creat 1000 token for account ${account.address}`);
       await erc20Token.connect(account).approve(instance.address, 1000);
       await instance.connect(account).resigter(1, 2, 1000);
     }
   });
 
 
-  it("Should veirfy success", async function () {
-    let inVk = _.flattenDeep([vk.alpha, vk.beta, vk.gamma, vk.delta]);
-    let vkGammaABC = _.flattenDeep(vk.gammaABC);
-    let inProof = _.flattenDeep([proof.A, proof.B, proof.C]);
-    let input = proof.input;
-    let transaction_inputs = createTxInputs(state);
+  it("Transfer token inside layer 2", async function () {
+    let proof = readProof("./verify_key.txt", "./witness_transaction.json", "roll_up_transaction.json");
+    let transaction_inputs = createTxInputs(proof.data);
 
-    for (let account of accounts) {
-      console.log(`Number token off  account ${account.address} = ${await erc20Token.balanceOf(account.address)}`);
-    }
 
-    console.log("Rollup and withdraw");
+    console.log("Rollup transactions");
 
     let result = await instance.zkRollup(
-      inVk,
-      vkGammaABC,
-      inProof,
+      ...proof.params,
       transaction_inputs,
-      input[3],
-      input[0]
+      proof.public_input[3],
+      proof.public_input[0]
     );
 
+  });
+
+  it("Withdraw token", async() => {
+
+    let proof = readProof("./verify_key.txt", "./witness_withdraw.json", "./roll_up_withdraw.json");
+    let transaction_inputs = createTxInputs(proof.data);
+
+    console.log("withdraw");
+
+    let result = await instance.zkRollup(
+      ...proof.params,
+      transaction_inputs,
+      proof.public_input[3],
+      proof.public_input[0]
+    );
+
+    let total = toBigNumber(0);
     for (let account of accounts) {
+      let amount = await erc20Token.balanceOf(account.address);
+      total = total.add(amount);
       console.log(`Number token off  account ${account.address} = ${await erc20Token.balanceOf(account.address)}`);
     }
-  });
+    console.log(total.toString());
+  })
 });

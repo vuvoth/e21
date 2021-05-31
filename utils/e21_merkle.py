@@ -136,31 +136,29 @@ class ZkRollup(object):
         
         tx_proof["receiver_proof"] = self.get_proof(receiver_id)
         tx_proof["receiver"] = receiver.toDict();
-
+        
         receiver.receiveAsset(amount)
         self.update(receiver_id, receiver)
 
         return tx_proof
         
-
-def main():
-    args = sys.argv[1:]
-    total_account = int(args[0])
-    number_tx = int(args[1])
-    out_file_path = args[2]    
-    number_withdraw = int(args[3])
-    tx_proof = {
-            "number_tx": number_tx + number_withdraw
-            }
+def init_data(total_account): 
     zkr = ZkRollup();
     print("Create account.....")
     for i in range(0, total_account):     
         if (i  + 1) % 10 == 0:
             print("Creating and init data from user %d to %d..." %((i - 9), i))
         zkr.create_account();
-        if i > 1:
+        if i > 0:
             zkr.update_account_balance(i, FQ(1000, 1 << AMOUNT_SIZE))
+    return zkr
 
+def create_transactions(zkr, number_tx, out_file_path):
+    tx_proof = {
+            "number_tx": number_tx 
+            }
+    
+    total_account = zkr.account_number
     print("first root", zkr.merkle_tree.root);
     print("Create transaction.......")
     for i in range(number_tx):    
@@ -170,28 +168,46 @@ def main():
             sender_id = random.randrange(1, total_account)
             receiver_id = random.randrange(1, total_account)
             if(sender_id != receiver_id): break;
-
-        sender = zkr.get_account_by_index(sender_id)
+        sender = zkr.get_account_by_index(sender_id);
         amount = random.randrange(1, sender.balance)
         
         tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE )) 
-
-    for i in range(number_withdraw):    
-        if (i  + 1) % 10 == 0:
-            print("Creating withdraw request %d => %d..." %((i - 9), i))
-        while True:
-            sender_id = 0
-            receiver_id = random.randrange(1, total_account)
-            if(sender_id != receiver_id): break;
-
-        receiver = zkr.get_account_by_index(receiver_id)
-        amount = receiver.balance;
-        
-        tx_proof["tx" + str(i + number_tx)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
 
     tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
     with open(out_file_path, "w") as out_file: 
         json.dump(tx_proof, out_file, indent=4)
 
-main()
+def withdraw_layer(zkr, number_withdraw, out_file_path):
+    tx_proof = {
+            "number_tx":  number_withdraw
+            }
+    
+    total_account = zkr.account_number
+    print("first root", zkr.merkle_tree.root);
+    sender_id = 0
+    for i in range(number_withdraw):    
+        if (i + 1) % 10 == 0:
+            print("Creating withdraw request %d => %d..." %((i - 9), i))
+        receiver_id = 0
+        sender_id = (sender_id) % (total_account - 1) + 1
+        sender = zkr.get_account_by_index(sender_id);
+        amount = sender.balance;
+        
+        tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
 
+    tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
+    with open(out_file_path, "w") as out_file: 
+        json.dump(tx_proof, out_file, indent=4)
+
+def main(): 
+    args = sys.argv[1:]
+    total_account = int(args[0])
+    number_tx = int(args[1])
+    out_file_path = args[2]    
+    number_withdraw = int(args[3])
+    zkr = init_data(total_account); 
+    
+    create_transactions(zkr, number_tx, out_file_path + "_transaction.json");
+    withdraw_layer(zkr, number_withdraw, out_file_path + "_withdraw.json");
+
+main()
