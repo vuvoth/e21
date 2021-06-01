@@ -114,7 +114,7 @@ contract Main {
       } 
       else if (sender_id == 0) {
         // move in player 2
-        if (EthAddressOf[sender_id] != address(0))
+        if (EthAddressOf[receiver_id] != address(0))
           if (amount > 0)
           IERC20(token_address).transferFrom(EthAddressOf[receiver_id], address(this), amount);
       } 

@@ -12,17 +12,22 @@ async function loadContractAddress(path) {
   return JSON.parse(fs.readFileSync(path));
 }
 async function main() {
-  let address = process.argv[2];
 
   const { tokenAddress, zkrollAddress } = await loadContractAddress(
     "./data/contract_address.json"
   );
+  
+
+  console.log(tokenAddress, zkrollAddress);
+  const MyToken = await ethers.getContractFactory("MyToken");
+  const erc20TokenContract = await MyToken.attach(tokenAddress);
 
   const zkRollup = await ethers.getContractFactory("Main");
   const zkRollupContract = await zkRollup.attach(zkrollAddress);
+  const [owner, ...accounts] = await ethers.getSigners();
 
-  let [owner, ...accounts] = await ethers.getSigners();
-  
+  console.log((await erc20TokenContract.balanceOf(zkRollupContract.address)).toString())
+
   let numberAccount = await zkRollupContract.numberAccount();
 
   console.log(block["number_account"])

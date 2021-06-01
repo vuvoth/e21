@@ -10,7 +10,7 @@ from copy import copy, deepcopy
 import json
 TREE_DEEP = 8
 AMOUNT_SIZE = 32
-TOKEN_SUPPLY = 10000000 
+TOKEN_SUPPLY = int(1e9)
 class Account(object):
     def __init__(self, public_key, balance, nonce):
         self.public_key = public_key
@@ -77,12 +77,9 @@ class ZkRollup(object):
         self.merkle_tree.update(index, self.hash_leaf(account))
     
     def update_account_balance(self, index, balance):
-        zero_account = self.get_account_by_index(0)
         account = self.get_account_by_index(index)
         account.update_balance(balance)
         self.update(index, account)
-        zero_account.update_balance(balance); 
-        self.update(0, zero_account);
 
     def get_proof(self, index):
         proof = self.merkle_tree.proof(index)
@@ -140,7 +137,7 @@ class ZkRollup(object):
         
         receiver.receiveAsset(amount)
         self.update(receiver_id, receiver)
-
+        
         return tx_proof
     def write_data(self, file_path): 
         data = {}
@@ -178,15 +175,13 @@ class ZkRollup(object):
         while True:
             sender_id = random.randrange(1, self.account_number)
             receiver_id = random.randrange(1, self.account_number)
-            if(sender_id == receiver_id): 
-                continue; 
-
             sender = self.get_account_by_index(sender_id) 
-            if sender.balance ==  0:
-                continue;
-
-            amount = random.randrange(1, sender.balance)
-            return [sender_id, receiver_id, amount]
+            if(sender_id != receiver_id) and (sender.balance != 0): 
+                if (sender.balance == FQ(1, 1 << AMOUNT_SIZE)):
+                    amount = FQ(1, 1 << AMOUNT_SIZE)
+                else:
+                    amount = random.randrange(1, sender.balance)
+                return [sender_id, receiver_id, amount]
 
     def gen_withdraw(self, account_id) : 
         sender_id = account_id;
@@ -226,13 +221,12 @@ def create_transactions(zkr, number_tx, mechanism_type,  out_file_path):
             }
     
     total_account = zkr.account_number
-    print("first root", zkr.merkle_tree.root);
     print("Create transaction.......")
 
+
     for i in range(number_tx):    
-        if (i  + 1) % 10 == 0:
-            print("Creating transaction %d => %d..." %((i - 9), i))
         sender_id, receiver_id, amount = zkr.mechanism(mechanism_type, (i) % (total_account - 1) + 1)
+        print("%d => %d = %d" %(sender_id, receiver_id, amount))
         tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE )) 
 
     tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
