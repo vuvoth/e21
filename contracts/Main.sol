@@ -4,7 +4,7 @@ import "../libs/ethsnarks/contracts/Verifier.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Main {
-  uint256 constant public MERKLE_DEEP = 16; 
+  uint256 constant public MERKLE_DEEP = 8; 
   uint256 constant public AMOUNT_SIZE = 32;
   uint256 constant public NUMBER_TX_PRE_BATCH = 60;
   uint256 constant public NUMBER_INPUT = NUMBER_TX_PRE_BATCH * 4 + 2;
@@ -72,18 +72,28 @@ contract Main {
     }
     return x;
   }
+
+
+  function toUint8(bytes memory bs, uint start) internal pure returns (uint8 x) {
+    require(bs.length >= start + 1, "slicing out of range");
+    assembly {
+        x := mload(add(bs, add(0x1, start)))
+    }
+    return x;
+  }
+
   function transaction_input_content(bytes memory transaction_input, uint256 begin_) public pure 
   returns(
-    uint16 sender_id, 
-    uint16 receiver_id, 
+    uint8 sender_id, 
+    uint8 receiver_id, 
     uint32 amount, 
-    uint16 nonce
+    uint8 nonce
   )
   {
-    sender_id = toUint16(transaction_input, begin_) ;
-    receiver_id = toUint16(transaction_input, begin_ + 2);
-    amount = toUint32(transaction_input, begin_ + 4);
-    nonce = toUint16(transaction_input, begin_ + 8); 
+    sender_id = toUint8(transaction_input, begin_) ;
+    receiver_id = toUint8(transaction_input, begin_ + 1);
+    amount = toUint32(transaction_input, begin_ + 2);
+    nonce = toUint8(transaction_input, begin_ + 6); 
   } 
 
   // tranfer token in, out layer 
@@ -91,10 +101,10 @@ contract Main {
     uint transaction_size = (MERKLE_DEEP * 3 + AMOUNT_SIZE) / 8;
     for (uint index = 0; index < transaction_inputs.length; index = index + transaction_size ) {
       (
-        uint16 sender_id, 
-        uint16 receiver_id, 
+        uint8 sender_id, 
+        uint8 receiver_id, 
         uint32 amount, 
-        uint16 nonce
+        uint8 nonce
       ) = transaction_input_content(transaction_inputs, index);
       
       if (receiver_id == 0) {
@@ -164,8 +174,8 @@ contract Main {
     return true;
   }
   
-  function to_transaction_input_bytes(uint16 sender_id, uint16 receiver_id, uint32 amount, uint16 nonce) internal returns(bytes memory) {
-    return abi.encodePacked(bytes2(sender_id), bytes2(receiver_id), bytes4(amount), bytes2(nonce));  
+  function to_transaction_input_bytes(uint8 sender_id, uint16 receiver_id, uint32 amount, uint16 nonce) internal returns(bytes memory) {
+    return abi.encodePacked(bytes1(sender_id), bytes2(receiver_id), bytes4(amount), bytes2(nonce));  
   }
   
 
@@ -173,7 +183,7 @@ contract Main {
     uint256[14] memory in_vk, 
     uint256[] memory vk_gammaABC, 
     uint256[8] memory in_proof,
-    uint16 account_id, 
+    uint8 account_id, 
     uint256 old_root, 
     uint256 new_root
   ) public returns(bool) {
@@ -188,7 +198,7 @@ contract Main {
     uint256[14] memory in_vk, 
     uint256[] memory vk_gammaABC, 
     uint256[8] memory in_proof,
-    uint16 account_id, uint32 amount, uint16 nonce,
+    uint8 account_id, uint32 amount, uint16 nonce,
     uint256 old_root, 
     uint256 new_root
   ) public returns(bool) {

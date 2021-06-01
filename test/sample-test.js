@@ -5,7 +5,7 @@ const fs = require("fs");
 const _ = require("lodash");
 const { ethers } = require("hardhat");
 const NUMBER_TX_PRE_BATCH = 60;
-const MERKLE_DEEP = 16;
+const MERKLE_DEEP = 8;
 const AMOUNT_SIZE = 32;
 
 function createTxInputs(state) {
@@ -34,7 +34,7 @@ function createTxInputs(state) {
   return transaction_inputs;
 }
 
-describe("Verifier testing", function () {
+describe.skip("Verifier testing", function () {
   let vk, proof;
   let state;
   let MyToken, Main, erc20Token;
@@ -55,7 +55,7 @@ describe("Verifier testing", function () {
 
     for (let account of accounts) {
       await erc20Token.transfer(account.address, 1000);
-      console.log(`Creat 1000 token for account ${account.address}`);
+      //console.log(`Creat 1000 token for account ${account.address}`);
       await erc20Token.connect(account).approve(instance.address, 1000);
       await instance.connect(account).resigter(1, 2, 1000);
     }
@@ -69,10 +69,6 @@ describe("Verifier testing", function () {
     let input = proof.input;
     let transaction_inputs = createTxInputs(state);
 
-    for (let account of accounts) {
-      console.log(`Number token off  account ${account.address} = ${await erc20Token.balanceOf(account.address)}`);
-    }
-
     console.log("Rollup and withdraw");
 
     let result = await instance.zkRollup(
@@ -84,8 +80,5 @@ describe("Verifier testing", function () {
       input[0]
     );
 
-    for (let account of accounts) {
-      console.log(`Number token off  account ${account.address} = ${await erc20Token.balanceOf(account.address)}`);
-    }
   });
 });

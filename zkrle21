@@ -1,0 +1,35 @@
+#!/bin/bash
+E21_PROOF=./build/src/e21
+E21_GEN_DATA=./utils/e21_merkle.py
+
+
+if [[ $1 == "init" ]]
+then
+   echo "{\"commit_block\": 1}" > ./data/commit_block.txt
+   number_account=$2;
+   python $E21_GEN_DATA init $number_account
+   npx hardhat run --network localhost  scripts/deploy.js 
+   npx hardhat run --network localhost  scripts/approve.js 
+   $E21_PROOF genkey $3
+elif [[ $1 == "deposit" ]]
+then
+   block=$(cat ./data/commit_block.txt | jq -r ".commit_block")
+   python $E21_GEN_DATA gen_deposit $2
+   $E21_PROOF witness $2 ./data/$(echo $block)_transaction.json
+   npx hardhat run --network localhost  scripts/rollup.js 
+elif [[ $1 == "withdraw" ]]
+then 
+   block=$(cat ./data/commit_block.txt | jq -r ".commit_block")
+   python $E21_GEN_DATA gen_withdraw $2
+   $E21_PROOF witness $2 ./data/$(echo $block)_transaction.json
+   npx hardhat run --network localhost  scripts/rollup.js 
+elif  [[ $1 == "transfer" ]]
+then
+
+   block=$(cat ./data/commit_block.txt | jq -r ".commit_block")
+   python $E21_GEN_DATA gen_transfer $2
+   $E21_PROOF witness $2 ./data/$(echo $block)_transaction.json
+   npx hardhat run --network localhost  scripts/rollup.js 
+else 
+   npx hardhat run --network localhost  scripts/query.js 
+fi

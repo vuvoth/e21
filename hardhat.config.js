@@ -19,5 +19,5 @@ task("accounts", "Prints the list of accounts", async () => {
  */
 module.exports = {
   solidity :
-      {compilers : [ {version : "0.5.17"}, {version : "0.8.4", settings : {}} ]}
+      {compilers : [ {version : "0.5.17"} ]}
 };

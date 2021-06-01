@@ -5,7 +5,7 @@ const fs = require("fs");
 const _ = require("lodash");
 const { ethers } = require("hardhat");
 const NUMBER_TX_PRE_BATCH = 60;
-const MERKLE_DEEP = 16;
+const MERKLE_DEEP = 8;
 const AMOUNT_SIZE = 32;
 
 function createTxInputs(state) {
@@ -30,6 +30,7 @@ function createTxInputs(state) {
       receiver_address.slice(2) +
       amount.slice(2) +
       nonce.slice(2);
+
   }
   return transaction_inputs;
 }
@@ -71,8 +72,9 @@ describe("Transaction and withdraw", function () {
     [owner, ...accounts] = await ethers.getSigners();
     console.log("       Init token......")
     for (let account of accounts) {
-      await erc20Token.transfer(account.address, 1000);
+      await erc20Token.transfer(account.address, 1200);
       await erc20Token.connect(account).approve(instance.address, 1000);
+      await erc20Token.connect(account).transfer(owner.address, 200);
       await instance.connect(account).resigter(1, 2, 1000);
     }
   });

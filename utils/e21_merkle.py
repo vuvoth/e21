@@ -8,9 +8,9 @@ from ethsnarks.jubjub import Point
 
 from copy import copy, deepcopy
 import json
-TREE_DEEP = 16
+TREE_DEEP = 8
 AMOUNT_SIZE = 32
-
+TOKEN_SUPPLY = 10000000 
 class Account(object):
     def __init__(self, public_key, balance, nonce):
         self.public_key = public_key
@@ -50,6 +50,7 @@ class ZkRollup(object):
         self.merkle_tree = MerkleTree(1<<TREE_DEEP)
         self.hasher = mimc_hash;
         self.signature = PureEdDSA()
+        self.block = 0
 
     def hash_leaf(self, account): 
         return self.hasher(map(int, account.get_details()), 1)
@@ -141,7 +142,74 @@ class ZkRollup(object):
         self.update(receiver_id, receiver)
 
         return tx_proof
-        
+    def write_data(self, file_path): 
+        data = {}
+        leaf_data = {}
+        for index in self.state:
+            account_data = self.state[index].toDict()
+            account_data["k"] = str(self.client_data[index].n)
+            leaf_data[index] = account_data
+        data["block"] = self.block + 1
+        data["root"] = str(self.merkle_tree.root)
+        data["leaf"] = leaf_data
+        data["number_account"] = self.account_number;
+        with open(file_path, "w") as out_file: 
+            json.dump(data, out_file, indent=4)
+
+    def read_data(self, file_path): 
+        with open(file_path, "r") as read_file:
+            data = json.load(read_file)
+        self.block = data['block'];
+        leaf_data = data['leaf']
+        self.account_number = 0;
+        for leaf_index in leaf_data:
+            leaf = leaf_data[leaf_index]
+            public_key = Point(FQ(int(leaf["public_key_x"])), 
+                        FQ(int(leaf["public_key_y"])))
+            account = Account(public_key, int(leaf['balance']), int(leaf['nonce'])) 
+            self.add_account(account)
+            self.client_data[int(leaf_index)] = FQ(int(leaf['k']))
+            self.account_number = self.account_number  + 1 
+            self.state[int(leaf_index)] = account
+    
+    def gen_internal_transaction(self) : 
+        sender_id = 0;
+        receiver_id = 0;
+        while True:
+            sender_id = random.randrange(1, self.account_number)
+            receiver_id = random.randrange(1, self.account_number)
+            if(sender_id == receiver_id): 
+                continue; 
+
+            sender = self.get_account_by_index(sender_id) 
+            if sender.balance ==  0:
+                continue;
+
+            amount = random.randrange(1, sender.balance)
+            return [sender_id, receiver_id, amount]
+
+    def gen_withdraw(self, account_id) : 
+        sender_id = account_id;
+        receiver_id = 0;
+
+        sender = self.get_account_by_index(sender_id) 
+        amount = sender.balance
+        return [sender_id, receiver_id, amount]
+    
+    def gen_deposit(self, account_id, amount = 100): 
+        sender_id = 0;
+        receiver_id = account_id;
+        return [sender_id, receiver_id, amount]
+
+    def mechanism(self, sign, index): 
+        if sign == "internal":
+            transaction = self.gen_internal_transaction()
+        elif sign == "withdraw":
+            transaction = self.gen_withdraw(index)
+        elif sign == "deposit":
+            transaction = self.gen_deposit(index)
+        return transaction
+
 def init_data(total_account): 
     zkr = ZkRollup();
     print("Create account.....")
@@ -149,11 +217,10 @@ def init_data(total_account):
         if (i  + 1) % 10 == 0:
             print("Creating and init data from user %d to %d..." %((i - 9), i))
         zkr.create_account();
-        if i > 0:
-            zkr.update_account_balance(i, FQ(1000, 1 << AMOUNT_SIZE))
+    zkr.update_account_balance(0, FQ(TOKEN_SUPPLY,1 << AMOUNT_SIZE))
     return zkr
 
-def create_transactions(zkr, number_tx, out_file_path):
+def create_transactions(zkr, number_tx, mechanism_type,  out_file_path):
     tx_proof = {
             "number_tx": number_tx 
             }
@@ -161,53 +228,38 @@ def create_transactions(zkr, number_tx, out_file_path):
     total_account = zkr.account_number
     print("first root", zkr.merkle_tree.root);
     print("Create transaction.......")
+
     for i in range(number_tx):    
         if (i  + 1) % 10 == 0:
             print("Creating transaction %d => %d..." %((i - 9), i))
-        while True:
-            sender_id = random.randrange(1, total_account)
-            receiver_id = random.randrange(1, total_account)
-            if(sender_id != receiver_id): break;
-        sender = zkr.get_account_by_index(sender_id);
-        amount = random.randrange(1, sender.balance)
-        
+        sender_id, receiver_id, amount = zkr.mechanism(mechanism_type, (i) % (total_account - 1) + 1)
         tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE )) 
 
     tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
-    with open(out_file_path, "w") as out_file: 
-        json.dump(tx_proof, out_file, indent=4)
-
-def withdraw_layer(zkr, number_withdraw, out_file_path):
-    tx_proof = {
-            "number_tx":  number_withdraw
-            }
-    
-    total_account = zkr.account_number
-    print("first root", zkr.merkle_tree.root);
-    sender_id = 0
-    for i in range(number_withdraw):    
-        if (i + 1) % 10 == 0:
-            print("Creating withdraw request %d => %d..." %((i - 9), i))
-        receiver_id = 0
-        sender_id = (sender_id) % (total_account - 1) + 1
-        sender = zkr.get_account_by_index(sender_id);
-        amount = sender.balance;
-        
-        tx_proof["tx" + str(i)] = zkr.tranfer_asset(sender_id, receiver_id, FQ(amount, 1 << AMOUNT_SIZE ))
-
-    tx_proof["final_merkle_root"] = str(zkr.merkle_tree.root)
+    tx_proof["block"] = str(zkr.block);
     with open(out_file_path, "w") as out_file: 
         json.dump(tx_proof, out_file, indent=4)
 
 def main(): 
     args = sys.argv[1:]
-    total_account = int(args[0])
-    number_tx = int(args[1])
-    out_file_path = args[2]    
-    number_withdraw = int(args[3])
-    zkr = init_data(total_account); 
-    
-    create_transactions(zkr, number_tx, out_file_path + "_transaction.json");
-    withdraw_layer(zkr, number_withdraw, out_file_path + "_withdraw.json");
+    option = args[0]
+    if option == "init":
+        number_account = int(args[1])
+        zkr = init_data(number_account);
+        zkr.write_data("./data/block.json")
+    else:
+        number_tx = int(args[1])
+        zkr = ZkRollup();
+        zkr.read_data("./data/block.json")
+        out_file = "./data/" + str(zkr.block) + "_transaction.json"
+        if option == "gen_transfer":
+           create_transactions(zkr, number_tx, "internal", out_file);
+           zkr.write_data("./data/block.json")
+        elif option == "gen_withdraw": 
+           create_transactions(zkr, number_tx, "withdraw", out_file);
+           zkr.write_data("./data/block.json")
+        elif option == "gen_deposit": 
+           create_transactions(zkr, number_tx, "deposit", out_file);
+           zkr.write_data("./data/block.json")
 
 main()
