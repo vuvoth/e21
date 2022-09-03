@@ -1,7 +1,6 @@
 #ifndef SRC_ZKPROOF_TRANSACTION_HPP_
 #define SRC_ZKPROOF_TRANSACTION_HPP_
 
-#include <util.h>
 
 #include <ethsnarks.hpp>
 #include <jubjub/eddsa.hpp>

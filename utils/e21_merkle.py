@@ -180,7 +180,7 @@ class ZkRollup(object):
                 if (sender.balance == FQ(1, 1 << AMOUNT_SIZE)):
                     amount = FQ(1, 1 << AMOUNT_SIZE)
                 else:
-                    amount = random.randrange(1, sender.balance)
+                    amount = random.randrange(1, int(sender.balance))
                 return [sender_id, receiver_id, amount]
 
     def gen_withdraw(self, account_id) : 

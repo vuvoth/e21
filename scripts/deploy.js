@@ -18,7 +18,7 @@ async function main() {
   
   console.log("Deploying Token");
   const MyToken = await hre.ethers.getContractFactory("MyToken");
-  const erc20Contract = await MyToken.deploy("100000000000");
+  const erc20Contract = await MyToken.deploy("10000000000000000000000000000000000");
 
   await erc20Contract.deployed();
 
