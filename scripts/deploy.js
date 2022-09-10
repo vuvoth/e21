@@ -36,7 +36,7 @@ async function main() {
 
   let addresses = { tokenAddress: erc20Contract.address, zkrollAddress : zkRollupContract.address};
 
-  await fs.writeFileSync("./data/contract_address.json", JSON.stringify(addresses));
+  fs.writeFileSync("./data/contract_address.json", JSON.stringify(addresses));
 }
 
 // We recommend this pattern to be able to use async/await everywhere

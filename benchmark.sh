@@ -4,7 +4,7 @@ number_user=20
 
 echo "Benchmark for merkle tree deep = 8 => 2^8 node!!!"
 echo -e
-for tx_per_epoch in {20..50}
+for tx_per_epoch in {10..50..5}
 do
     echo "=========================================="
     echo "Benckmark with tx/epoch = $tx_per_epoch"

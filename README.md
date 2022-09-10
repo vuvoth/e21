@@ -27,6 +27,12 @@ export number_user=10 # should less than 20 because hardhat only have 20 default
 ./zkrle21 withdraw $tx_per_epoch
 ```
 
+Benchmark token tranfer 
+
+```bash 
+npx hardhat run ./scripts/token_benchmark.js 
+```
+
 ## Architecture
 ## Docs
 
